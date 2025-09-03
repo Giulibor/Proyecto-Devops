@@ -129,7 +129,3 @@ kubectl logs deploy/snake-app-green
 ```
 
 ---
----
-
-👉 Con esto tenés un flujo completo de despliegue **Blue/Green** en Kubernetes usando Minikube.
-
