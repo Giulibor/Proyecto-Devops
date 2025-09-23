@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
         - name: snake-app
-          image: snake-app:v1
+          image: snake-app:v1-blue
           ports: [ { containerPort: 80 } ]
           livenessProbe:  { httpGet: { path: "/", port: 80 }, initialDelaySeconds: 5,  periodSeconds: 10 }
           readinessProbe: { httpGet: { path: "/", port: 80 }, initialDelaySeconds: 3,  periodSeconds: 5  }

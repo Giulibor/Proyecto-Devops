@@ -17,6 +17,14 @@ minikube start --driver=docker
 ```bash
 eval $(minikube docker-env)
 ```
+```bash
+ & minikube -p minikube docker-env | Invoke-Expression
+```
+
+> Para volver a la normalidad:
+```bash
+& minikube docker-env --unset | Invoke-Expression
+```
 
 > Configura tu Docker local para que use el demonio de Docker interno de Minikube.
 
