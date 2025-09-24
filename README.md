@@ -29,6 +29,14 @@ eval $(minikube docker-env)
 > Configura tu Docker local para que use el demonio de Docker interno de Minikube.
 
 ---
+### Limpiar ambiente !!!ATENCION!!!
+
+ !!!CUIDADO!!! Acorde necesario, borrar todos los deploys, services y pods anteriores
+```bash
+kubectl delete deploys --all
+kubectl delete service --all
+kubectl delete pods --all
+```
 
 ### Construcción de imágenes (v1 y v2)
 
@@ -41,7 +49,7 @@ Creamos dos versiones de la aplicación con un cambio mínimo en el título (`ap
 ```
 
 ```bash
-docker build -t snake-app:v1 .
+docker build -t snake-app:v1-blue .
 ```
 
 ### v2 (green)
@@ -51,7 +59,7 @@ docker build -t snake-app:v1 .
 ```
 
 ```bash
-docker build -t snake-app:v2 .
+docker build -t snake-app:v2-green .
 ```
 
 ---
@@ -67,9 +75,9 @@ Dentro de la carpeta `k8s/` se incluyen los archivos:
 #### Aplicación de los manifiestos
 
 ```bash
-kubectl apply -f k8s/deployment-blue.yaml   # despliegue v1
-kubectl apply -f k8s/deployment-green.yaml  # despliegue v2
-kubectl apply -f k8s/service.yaml           # creación del service
+kubectl apply -f k8s/deployment-blue.yaml
+kubectl apply -f k8s/deployment-green.yaml
+kubectl apply -f k8s/service.yaml
 ```
 
 #### Verificación de despliegues
