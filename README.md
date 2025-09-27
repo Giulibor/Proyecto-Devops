@@ -37,4 +37,8 @@ Se seguirán **agregando nuevas carpetas** a medida que el curso avance, cada un
 
 ---
 
-✔ Este documento se actualizará a medida que el proyecto evolucione.
+## Documentación
+
+En la carpeta `/docs/` se encuentran documentos de referencia, como convenciones de ramas, estrategias de branching, entre otros.  
+
+---
