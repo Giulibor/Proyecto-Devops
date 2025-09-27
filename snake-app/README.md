@@ -124,8 +124,11 @@ kubectl patch svc snake-app -p '{"spec":{"selector":{"app":"snake-app","color":"
 
 ⚠️ **Importante:**
 La app está servida con Angular + Nginx, por lo que el navegador puede cachear el HTML.
-Para forzar la recarga:
 
+Limpiar cache:
+* En Safari de MacOS: `Option + Command + E`
+
+O direcatamente forzar la recarga:
 * En macOS: `Command + Shift + R`
 * En Windows/Linux: `Ctrl + Shift + R`
 
