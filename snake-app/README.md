@@ -1,6 +1,10 @@
+
 # Proyecto-Devops
 
+> ⚠️ **Nota:** Debido a la reestructuración del repositorio, **todos los comandos deben ejecutarse desde dentro del directorio `snake-app`**.
+
 ## Entrega 1
+
 Contiene un ejemplo práctico de despliegue **Blue/Green** en Kubernetes utilizando **Minikube** y **Docker** como entorno local.
 La aplicación base es una versión simple del juego Snake en Angular.
 
@@ -17,11 +21,13 @@ minikube start --driver=docker
 ```bash
 eval $(minikube docker-env)
 ```
+
 ```bash
  & minikube -p minikube docker-env | Invoke-Expression
 ```
 
 > Para volver a la normalidad:
+
 ```bash
 & minikube docker-env --unset | Invoke-Expression
 ```
@@ -29,20 +35,22 @@ eval $(minikube docker-env)
 > Configura tu Docker local para que use el demonio de Docker interno de Minikube.
 
 ---
-### Limpiar ambiente !!!ATENCION!!!
 
- !!!CUIDADO!!! Acorde necesario, borrar todos los deploys, services y pods anteriores
+### Limpiar ambiente ¡ATENCION!
+
+¡¡¡CUIDADO!!! Acorde necesario, borrar todos los deploys, services y pods anteriores
+
 ```bash
-kubectl delete deploys --all
+kubectl delete deploy --all
 kubectl delete service --all
 kubectl delete pods --all
 ```
 
 ### Construcción de imágenes (v1 y v2)
 
-Creamos dos versiones de la aplicación con un cambio mínimo en el título (`app.component.html`).
+Creamos dos versiones de la aplicación con un cambio mínimo en el título (`snake-app/src/app/app.component.html`).
 
-### v1 (blue)
+#### v1 (blue)
 
 ```html
 <h1>Balada das serpentes 🐍 <span style="font-size:.8em;">v1 (blue)</span></h1>
@@ -52,7 +60,7 @@ Creamos dos versiones de la aplicación con un cambio mínimo en el título (`ap
 docker build -t snake-app:v1-blue .
 ```
 
-### v2 (green)
+#### v2 (green)
 
 ```html
 <h1>Balada das serpentes 🐍 <span style="font-size:.8em;">v2 (green)</span></h1>
