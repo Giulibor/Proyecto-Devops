@@ -3,6 +3,7 @@
 # Este Dockerfile utiliza un proceso de construcción en dos etapas:
 # 1. Etapa de construcción: Usa un entorno Node.js para instalar dependencias y construir la aplicación Angular.
 # 2. Etapa de ejecución: Usa un servidor Nginx para servir los archivos estáticos compilados.
+#
 
 # ----- Etapa de construcción -----
 FROM node:20-alpine AS build
@@ -36,4 +37,4 @@ COPY --from=build /app/dist/snake-app/browser /usr/share/nginx/html
 EXPOSE 80
 
 # Iniciar Nginx en primer plano para que el contenedor siga en ejecución
-CMD ["nginx", "-g", "daemon off;"]</file>
+CMD ["nginx", "-g", "daemon off;"]
