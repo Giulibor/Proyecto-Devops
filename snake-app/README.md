@@ -7,17 +7,23 @@ La aplicación base es una versión simple del juego Snake en Angular.
 
 ## Scripts disponibles
 
+Los scripts fueron diseñados para automatizar el flujo completo (build, despliegue, rollout, limpieza).
+
 ### El flujo recomendado
 
 - `cd snake-app/scripts`
-- `sh 01_up.sh`
-  - salir con `Ctrl + C`
-- `sh 02_rollout.sh green`
-  - salir con `Ctrl + C`
-- `sh 02_rollout.sh blue`
-  - salir con `Ctrl + C`
+- `sh 01_up.sh`  
+  - Este script deja la terminal ocupada ejecutando `minikube service snake-app`, por lo que se cierra con `Ctrl + C`.  
+  - Para usuarios de Windows, existe la versión PowerShell: `.\01_up.ps1`
+- `sh 02_rollout.sh green`  
+  - Este script también deja la terminal ocupada ejecutando `minikube service snake-app`, por lo que se cierra con `Ctrl + C`.  
+  - Para usuarios de Windows, existe la versión PowerShell: `.\02_rollout.ps1`
+- `sh 02_rollout.sh blue`  
+  - Este script también deja la terminal ocupada ejecutando `minikube service snake-app`, por lo que se cierra con `Ctrl + C`.  
+  - Para usuarios de Windows, existe la versión PowerShell: `.\02_rollout.ps1`  
     - (repetir los dos pasos anteriores las veces que se requiera.)
-- `sh 03_down.sh`.
+- `sh 03_down.sh`.  
+  - Para usuarios de Windows, existe la versión PowerShell: `.\03_down.ps1`
 
 > ⚠️ **Nota:** Si bien se ha reestructurado el repositorio, **los scripts pueden ejecutarse desde cualquier directorio**.
 
@@ -27,15 +33,19 @@ La aplicación base es una versión simple del juego Snake en Angular.
 Los scripts se encuentran en el directorio `snake-app/scripts`, su objetivo es la automatizacion de tareas comunes:
 
 - `01_up.sh`:
-  - **Propopsito:** Prepara el ambiente completo, inicia Minikube, limpia recursos previos, ejecuta el build de imágenes llamando a `01b_build_images.sh`, aplica los manifiestos y abre el Service.  
-  - **Uso:** Este script deja abierto el comando `minikube service snake-app`, que muestra la URL del servicio en el navegador. Para finalizar este comando y cerrar el servicio, es necesario presionar `Ctrl+C`.
+  - **Propósito:** Prepara el ambiente completo, inicia Minikube, limpia recursos previos, ejecuta el build de imágenes llamando a `01b_build_images.sh`, aplica los manifiestos y abre el Service.  
+  - **Uso:** Este script deja abierto el comando `minikube service snake-app`, que muestra la URL del servicio en el navegador. Para finalizar este comando y cerrar el servicio, es necesario presionar `Ctrl+C`.  
+  - También existe la versión para Windows (PowerShell): `01_up.ps1`.
 - `01b_build_images.sh`:
-  - **Propopsito:** Construye automáticamente las imágenes blue (v1) y green (v2), modificando el H1 del HMTL del archivo `snake-app/src/app/app.component.html`HTML, generando previamente un backup.
+  - **Propósito:** Construye automáticamente las imágenes blue (v1) y green (v2), modificando el H1 del HMTL del archivo `snake-app/src/app/app.component.html`HTML, generando previamente un backup.  
+  - También existe la versión para Windows (PowerShell): `01b_build_images.ps1`.
 - `02_rollout.sh`:
-  - **Propopsito:** Permite cambiar el Service entre blue y green y abrir el navegador para validar el cambio.  
-  - **Uso:** Se debe invocar con un argumento que indique la versión deseada, `blue` o `green`, por ejemplo: `sh 02_rollout.sh green`. Este script también deja abierto el comando `minikube service snake-app` para visualizar el cambio. Para cerrar este comando y el servicio, presionar `Ctrl+C`.
+  - **Propósito:** Permite cambiar el Service entre blue y green y abrir el navegador para validar el cambio.  
+  - **Uso:** Se debe invocar con un argumento que indique la versión deseada, `blue` o `green`, por ejemplo: `sh 02_rollout.sh green`. Este script también deja abierto el comando `minikube service snake-app` para visualizar el cambio. Para cerrar este comando y el servicio, presionar `Ctrl+C`.  
+  - También existe la versión para Windows (PowerShell): `02_rollout.ps1`.
 - `03_down.sh`:
-  - **Propopsito:** Limpia todo (deploys, services, pods), detiene Minikube y revierte las variables de entorno de Docker.
+  - **Propósito:** Limpia todo (deploys, services, pods), detiene Minikube y revierte las variables de entorno de Docker.  
+  - También existe la versión para Windows (PowerShell): `03_down.ps1`.
 
 ---
 

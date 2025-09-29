@@ -39,4 +39,9 @@ RUN ng version && ng build --configuration=production
 
 ### Archivos nuevos
 
+.gitignore
 .docerkignore
+
+### Scripts de automatización
+
+Se crearon scripts para automatizar los pasos de build, despliegue, rollout y limpieza del ambiente en Minikube, con el objetivo de simplificar la ejecución y garantizar el funcionamiento correcto del flujo blue/green.
