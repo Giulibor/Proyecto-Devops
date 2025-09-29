@@ -1,4 +1,5 @@
 # Proyecto DevOps
+<img width="360" height="360" alt="png-transparent-black-monkey-chimpanzee-monkey-ape-gorilla-monkey-mammal-image-file-formats-animals-thumbnail" src="https://github.com/user-attachments/assets/7ff98c61-1e4e-4d52-8da9-4877139b1ebb" />
 
 Este es el **repositorio oficial** del proyecto desarrollado para la materia **DevOps** en la Universidad Católica del Uruguay (UCU).  
 Aquí se encuentra la implementación principal de la aplicación y los materiales asociados.
