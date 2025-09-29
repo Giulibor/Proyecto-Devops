@@ -11,16 +11,8 @@ fi
 echo "==> Cambiando Service a color=$COLOR"
 kubectl patch svc snake-app -p "{\"spec\":{\"selector\":{\"app\":\"snake-app\",\"color\":\"$COLOR\"}}}"
 
-echo "==> Endpoints del Service"
-kubectl get endpoints snake-app -o wide
+echo "==> Servicio snake-app"
+kubectl get svc snake-app -o wide 
 
-echo "==> Comprobando por curl (cierra conexión por request para evitar keep-alive)"
-MINI_IP="$(minikube ip)"
-NODEPORT="$(kubectl get svc snake-app -o jsonpath='{.spec.ports[0].nodePort}')"
-for i in {1..8}; do
-  printf "req %02d -> " "$i"
-  curl -s -H 'Connection: close' "http://$MINI_IP:$NODEPORT/" | head -n1
-done
-
-echo "==> URL del Service"
-echo "http://$MINI_IP:$NODEPORT"
+echo "==> Abriendo Service con minikube (dejá esta terminal abierta para visualizar la app)"
+minikube service snake-app
