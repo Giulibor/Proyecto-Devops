@@ -1,147 +1,44 @@
-# Proyecto-Devops
+# Proyecto DevOps
 
-## Entrega 1
-Contiene un ejemplo práctico de despliegue **Blue/Green** en Kubernetes utilizando **Minikube** y **Docker** como entorno local.
-La aplicación base es una versión simple del juego Snake en Angular.
-
----
-
-### Arranque de Minikube
-
-```bash
-minikube start --driver=docker
-```
-
-> Inicia un clúster local de Kubernetes con Minikube, utilizando Docker como proveedor de máquinas virtuales.
-
-```bash
-eval $(minikube docker-env)
-```
-```bash
- & minikube -p minikube docker-env | Invoke-Expression
-```
-
-> Para volver a la normalidad:
-```bash
-& minikube docker-env --unset | Invoke-Expression
-```
-
-> Configura tu Docker local para que use el demonio de Docker interno de Minikube.
-
----
-### Limpiar ambiente !!!ATENCION!!!
-
- !!!CUIDADO!!! Acorde necesario, borrar todos los deploys, services y pods anteriores
-```bash
-kubectl delete deploys --all
-kubectl delete service --all
-kubectl delete pods --all
-```
-
-### Construcción de imágenes (v1 y v2)
-
-Creamos dos versiones de la aplicación con un cambio mínimo en el título (`app.component.html`).
-
-### v1 (blue)
-
-```html
-<h1>Balada das serpentes 🐍 <span style="font-size:.8em;">v1 (blue)</span></h1>
-```
-
-```bash
-docker build -t snake-app:v1-blue .
-```
-
-### v2 (green)
-
-```html
-<h1>Balada das serpentes 🐍 <span style="font-size:.8em;">v2 (green)</span></h1>
-```
-
-```bash
-docker build -t snake-app:v2-green .
-```
+Este es el **repositorio oficial** del proyecto desarrollado para la materia **DevOps** en la Universidad Católica del Uruguay (UCU).  
+Aquí se encuentra la implementación principal de la aplicación y los materiales asociados.
 
 ---
 
-### Manifiestos de Kubernetes
+## Participantes del grupo
 
-Dentro de la carpeta `k8s/` se incluyen los archivos:
-
-* `deployment-blue.yaml` → despliegue de **v1**
-* `deployment-green.yaml` → despliegue de **v2**
-* `service.yaml` → servicio expuesto para balancear entre ambas versiones
-
-#### Aplicación de los manifiestos
-
-```bash
-kubectl apply -f k8s/deployment-blue.yaml
-kubectl apply -f k8s/deployment-green.yaml
-kubectl apply -f k8s/service.yaml
-```
-
-#### Verificación de despliegues
-
-```bash
-kubectl get pods -l app=snake-app
-kubectl rollout status deploy/snake-app-blue
-kubectl rollout status deploy/snake-app-green
-```
+- **Giuliana Bordon**
+- **Ricardo Castro**
+- **Leonardo Conde**
 
 ---
 
-### Acceso a la aplicación
+## Repositorios relacionados
 
-Abrir el servicio en navegador:
+- **Repositorio oficial (este):** [Giulibor/Proyecto-Devops](https://github.com/Giulibor/Proyecto-Devops)  
+- **Repositorio de pruebas:** [CocoCondo/snakeDevOps](https://github.com/CocoCondo/snakeDevOps/branches)
 
-```bash
-minikube service snake-app
-```
-
----
-
-### Cambiar entre versiones (Blue/Green)
-
-* Pasar a **green**:
-
-```bash
-kubectl patch svc snake-app -p '{"spec":{"selector":{"app":"snake-app","color":"green"}}}'
-```
-
-* Pasar a **blue**:
-
-```bash
-kubectl patch svc snake-app -p '{"spec":{"selector":{"app":"snake-app","color":"blue"}}}'
-```
-
-⚠️ **Importante:**
-La app está servida con Angular + Nginx, por lo que el navegador puede cachear el HTML.
-Para forzar la recarga:
-
-* En macOS: `Command + Shift + R`
-* En Windows/Linux: `Ctrl + Shift + R`
+El repositorio de pruebas fue utilizado para ensayos, experimentos y validaciones previas, mientras que este repositorio se considera el **punto de referencia principal** del proyecto.
 
 ---
 
-### Validaciones útiles
+## Estructura del repositorio
 
-* **Pods por color:**
+Actualmente el repositorio cuenta con las siguientes carpetas:
 
-```bash
-kubectl get pods -l app=snake-app -L color
-```
+- **`snake-app/`**  
+  Aplicación oficial del proyecto.  
+  Aquí se encuentra el código de la aplicación **principal** desarrollada durante el curso.
 
-* **Ver endpoints del service y NodePort:**
+- **`note-api/`**  
+  API de notas utilizada para **pruebas en clase** y experimentación con conceptos de contenedores y Kubernetes.  
 
-```bash
-kubectl get svc snake-app -o wide
-```
+Se seguirán **agregando nuevas carpetas** a medida que el curso avance, cada una correspondiente a distintos módulos, prácticas o entregables.
 
-* **Revisar logs:**
+---
 
-```bash
-kubectl logs deploy/snake-app-blue
-kubectl logs deploy/snake-app-green
-```
+## Documentación
+
+En la carpeta `/docs/` se encuentran documentos de referencia, como convenciones de ramas, estrategias de branching, entre otros.  
 
 ---
