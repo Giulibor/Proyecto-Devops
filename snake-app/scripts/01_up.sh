@@ -20,8 +20,8 @@ kubectl delete deploy -l app=snake-app --ignore-not-found
 kubectl delete svc    -l app=snake-app --ignore-not-found
 kubectl delete pod    -l app=snake-app --ignore-not-found
 
-echo "==> 4) Construyendo imágenes (delegado a 00_build_images.sh)"
-"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/00_build_images.sh"
+echo "==> 4) Construyendo imágenes (delegado a 01b_build_images.sh)"
+sh "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/01b_build_images.sh"
 
 echo "==> 5) Aplicando manifests"
 kubectl apply -f "$K8S_DIR/deployment-blue.yaml"
