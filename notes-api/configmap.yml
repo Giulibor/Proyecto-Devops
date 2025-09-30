@@ -24,12 +24,21 @@ spec:
       containers:
       - name: notes-api
         image: notes-api:latest
+        imagePullPolicy: IfNotPresent
         env:
         - name: API_TITLE
           valueFrom:
             configMapKeyRef:
               name: notes-api-titles
               key: title1
+        ports:
+          - containerPort: 8000
+        volumeMounts:
+          - name: notes-data
+            mountPath: /app/data
+      volumes:
+        - name: notes-data
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -48,12 +57,21 @@ spec:
       containers:
       - name: notes-api
         image: notes-api:latest
+        imagePullPolicy: IfNotPresent
         env:
         - name: API_TITLE
           valueFrom:
             configMapKeyRef:
               name: notes-api-titles
               key: title2
+        ports:
+          - containerPort: 8000
+        volumeMounts:
+          - name: notes-data
+            mountPath: /app/data
+      volumes:
+        - name: notes-data
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -72,9 +90,57 @@ spec:
       containers:
       - name: notes-api
         image: notes-api:latest
+        imagePullPolicy: IfNotPresent
         env:
         - name: API_TITLE
           valueFrom:
             configMapKeyRef:
               name: notes-api-titles
               key: title3
+        ports:
+          - containerPort: 8000
+        volumeMounts:
+          - name: notes-data
+            mountPath: /app/data
+      volumes:
+        - name: notes-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-api-a-svc
+spec:
+  selector:
+    app: notes-api-a
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-api-b-svc
+spec:
+  selector:
+    app: notes-api-b
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-api-c-svc
+spec:
+  selector:
+    app: notes-api-c
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
