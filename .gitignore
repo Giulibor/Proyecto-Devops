@@ -10,6 +10,13 @@
 */node_modules/
 */yarn.lock
 
+# Python
+*/__pycache__/
+*/*.pyc
+*/.pytest_cache/
+*/.mypy_cache/
+*/.venv/
+
 # Environment files
 */.env
 

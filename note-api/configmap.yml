@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-api-titles
+data:
+  title1: "Notas API - Instancia A"
+  title2: "Notas API - Instancia B"
+  title3: "Notas API - Instancia C"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-api-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-api-a
+  template:
+    metadata:
+      labels:
+        app: notes-api-a
+    spec:
+      containers:
+      - name: notes-api
+        image: notes-api:latest
+        env:
+        - name: API_TITLE
+          valueFrom:
+            configMapKeyRef:
+              name: notes-api-titles
+              key: title1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-api-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-api-b
+  template:
+    metadata:
+      labels:
+        app: notes-api-b
+    spec:
+      containers:
+      - name: notes-api
+        image: notes-api:latest
+        env:
+        - name: API_TITLE
+          valueFrom:
+            configMapKeyRef:
+              name: notes-api-titles
+              key: title2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-api-c
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-api-c
+  template:
+    metadata:
+      labels:
+        app: notes-api-c
+    spec:
+      containers:
+      - name: notes-api
+        image: notes-api:latest
+        env:
+        - name: API_TITLE
+          valueFrom:
+            configMapKeyRef:
+              name: notes-api-titles
+              key: title3
