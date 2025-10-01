@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cafeteria-app
+  namespace: cafeteria
+  labels: { app: cafeteria-app }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: cafeteria-app }
+  template:
+    metadata:
+      labels: { app: cafeteria-app }
+    spec:
+      containers:
+        - name: cafeteria-app
+          image: cafeteria-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits:   { cpu: "500m", memory: "512Mi" }
+          env:
+            - name: MANAGEMENT_METRICS_TAGS_ENV
+              value: "prod"
