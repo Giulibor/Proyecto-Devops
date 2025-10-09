@@ -39,7 +39,7 @@
 */Thumbs.db
 
 # Terraform
-*/.terraform/
-*/.terraform.lock.hcl
-*/*.tfstate
-*/*.tfstate.backup
+infra/terraform/.terraform
+infra/terraform/.terraform.lock.hcl
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
