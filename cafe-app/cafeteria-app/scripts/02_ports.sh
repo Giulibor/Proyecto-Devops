@@ -8,35 +8,21 @@ echo "==> Namespace de monitoring: ${MON_NS}"
 kubectl get ns "${MON_NS}" >/dev/null
 
 # -------- Grafana --------
-echo "==> Buscando Pod de Grafana…"
-GRAFANA_POD="$(kubectl get pod -n "${MON_NS}" \
-  -l 'app.kubernetes.io/name=grafana' \
-  -o jsonpath='{.items[0].metadata.name}')"
+echo "==> Port-forward de Grafana (Service → 3000:80)"
+if kubectl -n "${MON_NS}" get svc "${RELEASE_NAME}-grafana" >/dev/null 2>&1; then
+  # password admin
+  if kubectl -n "${MON_NS}" get secret "${RELEASE_NAME}-grafana" >/dev/null 2>&1; then
+    GRAFANA_PASS="$(kubectl -n "${MON_NS}" get secret "${RELEASE_NAME}-grafana" -o jsonpath='{.data.admin-password}' | base64 -d)"
+    echo "   Usuario: admin"
+    echo "   Password: ${GRAFANA_PASS}"
+  fi
 
-if [[ -z "${GRAFANA_POD}" ]]; then
-  echo "❌ No encontré un Pod de Grafana en el ns ${MON_NS}. ¿Está instalado kube-prometheus-stack?"
-  exit 1
-fi
-
-# Puerto por defecto del container de Grafana
-GRAFANA_PORT="$(kubectl get pod -n "${MON_NS}" "${GRAFANA_POD}" \
-  -o jsonpath='{.spec.containers[0].ports[0].containerPort}')"
-
-# Obtener admin password del Secret del chart (si existe)
-echo "==> Intentando leer la password admin de Grafana del Secret…"
-if kubectl get secret -n "${MON_NS}" "${RELEASE_NAME}-grafana" >/dev/null 2>&1; then
-  GRAFANA_PASS="$(kubectl get secret -n "${MON_NS}" "${RELEASE_NAME}-grafana" \
-    -o jsonpath='{.data.admin-password}' | base64 -d)"
-  echo "   Usuario: admin"
-  echo "   Password: ${GRAFANA_PASS}"
+  kubectl -n "${MON_NS}" port-forward "svc/${RELEASE_NAME}-grafana" 3000:80 >/dev/null 2>&1 &
+  GRAFANA_FWD_PID=$!
+  echo "   Grafana en http://localhost:3000"
 else
-  echo "   No encontré el Secret ${RELEASE_NAME}-grafana. Si usaste otro release, exportá RELEASE_NAME."
+  echo "❌ No encontré el Service ${RELEASE_NAME}-grafana"
 fi
-
-echo "==> Haciendo port-forward de Grafana en http://localhost:3000"
-# Corre en background y limpia al salir
-kubectl -n "${MON_NS}" port-forward "pod/${GRAFANA_POD}" 3000:"${GRAFANA_PORT}" >/dev/null 2>&1 &
-GRAFANA_FWD_PID=$!
 
 # -------- Prometheus --------
 echo "==> Buscando Pod de Prometheus…"
