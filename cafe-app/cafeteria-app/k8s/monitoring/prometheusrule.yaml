@@ -4,7 +4,7 @@ metadata:
   name: cafeteria-rules
   namespace: monitoring
   labels:
-    release: kube-prometheus-stack
+    release: kube-prom-stack
 spec:
   groups:
     - name: cafeteria-order-rates
