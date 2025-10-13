@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cafeteria-app
+  namespace: cafeteria
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              echo "Esperando a Postgres en postgres:5432..."
+              until pg_isready -h postgres -p 5432 -t 5; do
+                echo "Aún no listo, reintentando..."
+                sleep 2
+              done
+              echo "Postgres OK"
+      containers:
+        - name: cafeteria-app
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            initialDelaySeconds: 25
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            initialDelaySeconds: 40
+            periodSeconds: 10

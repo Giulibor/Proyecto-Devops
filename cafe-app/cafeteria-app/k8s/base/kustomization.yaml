@@ -7,6 +7,7 @@ resources:
   - ns.yaml
   - deployment.yaml
   - service.yaml
+  - postgres.yaml
 
 labels:
   - includeSelectors: true
@@ -17,3 +18,6 @@ images:
   - name: cafeteria-app
     newName: cafeteria-app
     newTag: latest
+
+patches:
+  - path: patch-wait-postgres.yaml
