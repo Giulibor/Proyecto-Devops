@@ -9,10 +9,11 @@ version = '0.0.1-SNAPSHOT'
 description = 'API para tomar pedidos de cafetería DevOps'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
 }
+
 
 configurations {
 	compileOnly {

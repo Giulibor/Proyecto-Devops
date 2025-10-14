@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM gradle:8.14.3-jdk17-alpine AS build
+FROM gradle:8.14.3-jdk21 AS build
 WORKDIR /app
 COPY . .
 # Compila el fat JAR (salta tests para rapidez)
