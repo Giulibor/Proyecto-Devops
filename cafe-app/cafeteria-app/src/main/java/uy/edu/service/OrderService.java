@@ -6,6 +6,7 @@ import uy.edu.ucu.cafeteria_app.metrics.OrderMetrics;
 import uy.edu.ucu.cafeteria_app.model.CoffeeOrder;
 import uy.edu.ucu.cafeteria_app.model.OrderStatus;
 import uy.edu.ucu.cafeteria_app.repo.CoffeeOrderRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.List;
 
@@ -15,15 +16,22 @@ public class OrderService {
 
     private final CoffeeOrderRepository repo;
     private final OrderMetrics metrics;
+    private final MeterRegistry meterRegistry;
 
-    public OrderService(CoffeeOrderRepository repo, OrderMetrics metrics) {
+    public OrderService(CoffeeOrderRepository repo, OrderMetrics metrics, MeterRegistry meterRegistry) {
         this.repo = repo;
         this.metrics = metrics;
+        this.meterRegistry = meterRegistry;
     }
 
     public CoffeeOrder create(CoffeeOrder o) {
         CoffeeOrder saved = repo.save(o);
         metrics.incCreated();
+        String product = (saved.getDrink() != null && !saved.getDrink().isBlank()) ? saved.getDrink() : "unknown";
+        int qty = Math.max(1, saved.getQuantity());
+        meterRegistry
+            .counter("orders_total", "product", product)
+            .increment(qty);
         return saved;
     }
 
@@ -44,6 +52,11 @@ public class OrderService {
         CoffeeOrder saved = repo.save(o);
         if (status == OrderStatus.DELIVERED) {
             metrics.incDelivered();
+            String product = (saved.getDrink() != null && !saved.getDrink().isBlank()) ? saved.getDrink() : "unknown";
+            int qty = Math.max(1, saved.getQuantity());
+            meterRegistry
+                .counter("orders_delivered_total", "product", product)
+                .increment(qty);
         }
         return saved;
     }
