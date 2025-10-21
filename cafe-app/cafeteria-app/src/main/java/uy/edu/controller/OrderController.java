@@ -1,10 +1,10 @@
-package uy.edu.ucu.cafeteria_app.controller;
+package uy.edu.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import uy.edu.ucu.cafeteria_app.model.CoffeeOrder;
-import uy.edu.ucu.cafeteria_app.model.OrderStatus;
-import uy.edu.ucu.cafeteria_app.service.OrderService;
+import uy.edu.model.CoffeeOrder;
+import uy.edu.model.OrderStatus;
+import uy.edu.service.OrderService;
 
 import java.util.List;
 

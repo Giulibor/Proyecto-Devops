@@ -1,9 +1,12 @@
-package uy.edu.ucu.cafeteria_app.model;
+package uy.edu.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.time.Instant;
 
@@ -12,6 +15,7 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter @Setter @Builder
 public class CoffeeOrder {
 
     @Id

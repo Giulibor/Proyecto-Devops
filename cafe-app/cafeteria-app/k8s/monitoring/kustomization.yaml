@@ -6,6 +6,7 @@ namespace: monitoring
 resources:
   - servicemonitor.yaml
   - prometheusrule.yaml
+  - grafana-dashboard-cafeteria.yaml
 
 labels:
   - includeSelectors: true

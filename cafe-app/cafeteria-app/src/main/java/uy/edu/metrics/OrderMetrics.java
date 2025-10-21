@@ -1,4 +1,4 @@
-package uy.edu.ucu.cafeteria_app.metrics;
+package uy.edu.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;

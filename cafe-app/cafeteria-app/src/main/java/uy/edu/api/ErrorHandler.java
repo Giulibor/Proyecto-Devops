@@ -1,11 +1,11 @@
-package uy.edu.ucu.cafeteria_app.api;
+package uy.edu.api;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import uy.edu.ucu.cafeteria_app.service.OrderService;
+import uy.edu.service.OrderService;
 
 import java.time.Instant;
 import java.util.Map;

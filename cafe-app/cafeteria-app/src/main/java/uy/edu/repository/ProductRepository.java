@@ -2,7 +2,8 @@ package uy.edu.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import uy.edu.model.CoffeeOrder;
+import uy.edu.model.Product;
+
 
 @Repository
-public interface CoffeeOrderRepository extends JpaRepository<CoffeeOrder, Long> {}
+public interface ProductRepository extends JpaRepository<Product, Long> {}

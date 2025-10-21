@@ -1,4 +1,4 @@
-package uy.edu.ucu.cafeteria_app.model;
+package uy.edu.model;
 
 import lombok.*;
 

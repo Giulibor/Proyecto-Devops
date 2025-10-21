@@ -1,11 +1,12 @@
-package uy.edu.ucu.cafeteria_app.service;
+package uy.edu.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uy.edu.ucu.cafeteria_app.metrics.OrderMetrics;
-import uy.edu.ucu.cafeteria_app.model.CoffeeOrder;
-import uy.edu.ucu.cafeteria_app.model.OrderStatus;
-import uy.edu.ucu.cafeteria_app.repo.CoffeeOrderRepository;
+import uy.edu.metrics.OrderMetrics;
+import uy.edu.model.CoffeeOrder;
+import uy.edu.model.OrderStatus;
+import uy.edu.repository.CoffeeOrderRepository;
+import uy.edu.repository.ProductRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.List;
@@ -14,62 +15,80 @@ import java.util.List;
 @Transactional
 public class OrderService {
 
-    private final CoffeeOrderRepository repo;
-    private final OrderMetrics metrics;
-    private final MeterRegistry meterRegistry;
+  private final CoffeeOrderRepository coffeeOrderRepo;
+  private final OrderMetrics metrics;
+  private final MeterRegistry meterRegistry;
+  private final ProductRepository productRepo;
 
-    public OrderService(CoffeeOrderRepository repo, OrderMetrics metrics, MeterRegistry meterRegistry) {
-        this.repo = repo;
-        this.metrics = metrics;
-        this.meterRegistry = meterRegistry;
+  public OrderService(CoffeeOrderRepository coffeeOrderRepo, OrderMetrics metrics, MeterRegistry meterRegistry,
+      ProductRepository productRepo) {
+    this.coffeeOrderRepo = coffeeOrderRepo;
+    this.metrics = metrics;
+    this.meterRegistry = meterRegistry;
+    this.productRepo = productRepo;
+  }
+
+  public CoffeeOrder create(CoffeeOrder o) {
+    CoffeeOrder saved = coffeeOrderRepo.save(o);
+    metrics.incCreated();
+
+    String product = (saved.getDrink() != null && !saved.getDrink().isBlank())
+        ? saved.getDrink()
+        : "unknown";
+
+    int qty = Math.max(1, saved.getQuantity());
+    meterRegistry
+        .counter("coffee_orders_created_total", "product", product)
+        .increment(qty);
+
+    return saved;
+  }
+
+  @Transactional(readOnly = true)
+  public List<CoffeeOrder> list() {
+    return coffeeOrderRepo.findAll();
+  }
+
+  @Transactional(readOnly = true)
+  public CoffeeOrder get(Long id) {
+    return coffeeOrderRepo.findById(id)
+        .orElseThrow(() -> new NotFoundException("Order " + id + " not found"));
+  }
+
+  public CoffeeOrder updateStatus(Long id, OrderStatus status) {
+    CoffeeOrder o = get(id);
+    boolean wasDelivered = (o.getStatus() == OrderStatus.DELIVERED);
+
+    o.setStatus(status);
+    CoffeeOrder saved = coffeeOrderRepo.save(o);
+
+    if (status == OrderStatus.DELIVERED && !wasDelivered) {
+      metrics.incDelivered();
+
+      String product = (saved.getDrink() != null && !saved.getDrink().isBlank())
+          ? saved.getDrink()
+          : "unknown";
+
+      int qty = Math.max(1, saved.getQuantity());
+      meterRegistry
+          .counter("coffee_orders_delivered_total", "product", product)
+          .increment(qty);
     }
 
-    public CoffeeOrder create(CoffeeOrder o) {
-        CoffeeOrder saved = repo.save(o);
-        metrics.incCreated();
-        String product = (saved.getDrink() != null && !saved.getDrink().isBlank()) ? saved.getDrink() : "unknown";
-        int qty = Math.max(1, saved.getQuantity());
-        meterRegistry
-            .counter("orders_total", "product", product)
-            .increment(qty);
-        return saved;
-    }
+    return saved;
+  }
 
-    @Transactional(readOnly = true)
-    public List<CoffeeOrder> list() {
-        return repo.findAll();
+  public void delete(Long id) {
+    if (!coffeeOrderRepo.existsById(id)) {
+      throw new NotFoundException("Order " + id + " not found");
     }
+    coffeeOrderRepo.deleteById(id);
+  }
 
-    @Transactional(readOnly = true)
-    public CoffeeOrder get(Long id) {
-        return repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Order " + id + " not found"));
+  // Excepción checked/unchecked simple para 404
+  public static class NotFoundException extends RuntimeException {
+    public NotFoundException(String m) {
+      super(m);
     }
-
-    public CoffeeOrder updateStatus(Long id, OrderStatus status) {
-        CoffeeOrder o = get(id);
-        o.setStatus(status);
-        CoffeeOrder saved = repo.save(o);
-        if (status == OrderStatus.DELIVERED) {
-            metrics.incDelivered();
-            String product = (saved.getDrink() != null && !saved.getDrink().isBlank()) ? saved.getDrink() : "unknown";
-            int qty = Math.max(1, saved.getQuantity());
-            meterRegistry
-                .counter("orders_delivered_total", "product", product)
-                .increment(qty);
-        }
-        return saved;
-    }
-
-    public void delete(Long id) {
-        if (!repo.existsById(id)) {
-            throw new NotFoundException("Order " + id + " not found");
-        }
-        repo.deleteById(id);
-    }
-
-    // Excepción checked/unchecked simple para 404
-    public static class NotFoundException extends RuntimeException {
-        public NotFoundException(String m) { super(m); }
-    }
+  }
 }

@@ -1,10 +1,10 @@
-package uy.edu.ucu.cafeteria_app.controller;
+package uy.edu.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import uy.edu.ucu.cafeteria_app.model.Product;
-import uy.edu.ucu.cafeteria_app.service.ProductService;
+import uy.edu.model.Product;
+import uy.edu.service.ProductService;
 
 import java.util.List;
 
