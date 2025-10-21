@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cafeteria-app
+  namespace: cafeteria
+  labels: { app: cafeteria-app }
+spec:
+  type: ClusterIP
+  selector: { app: cafeteria-app }
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
