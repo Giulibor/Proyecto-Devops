@@ -4,7 +4,7 @@ metadata:
   name: grafana-dashboard-cafeteria
   namespace: monitoring
   labels:
-    grafana_dashboard: "1"   # <- debe coincidir con el de Helm
+    grafana_dashboard: "1"
 data:
   cafeteria-dashboard.json: |
     {

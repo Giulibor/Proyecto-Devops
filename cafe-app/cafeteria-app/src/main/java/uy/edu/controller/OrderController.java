@@ -1,6 +1,7 @@
 package uy.edu.controller;
 
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import uy.edu.model.CoffeeOrder;
 import uy.edu.model.OrderStatus;
@@ -10,37 +11,35 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
-    private final OrderService svc;
+  private final OrderService orderService;
 
-    public OrderController(OrderService svc) {
-        this.svc = svc;
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public CoffeeOrder create(@RequestBody CoffeeOrder body) {
+    return orderService.create(body);
+  }
 
-    @PostMapping
-    public ResponseEntity<CoffeeOrder> create(@RequestBody CoffeeOrder req) {
-        return ResponseEntity.ok(svc.create(req));
-    }
+  @GetMapping
+  public List<CoffeeOrder> list() {
+    return orderService.list();
+  }
 
-    @GetMapping
-    public List<CoffeeOrder> list() {
-        return svc.list();
-    }
+  @GetMapping("/{id}")
+  public CoffeeOrder get(@PathVariable Long id) {
+    return orderService.get(id);
+  }
 
-    @GetMapping("/{id}")
-    public CoffeeOrder get(@PathVariable Long id) {
-        return svc.get(id);
-    }
+  @PatchMapping("/{id}/status/{status}")
+  public CoffeeOrder updateStatus(@PathVariable Long id, @PathVariable OrderStatus status) {
+    return orderService.updateStatus(id, status);
+  }
 
-    @PatchMapping("/{id}/status/{status}")
-    public CoffeeOrder updateStatus(@PathVariable Long id, @PathVariable OrderStatus status) {
-        return svc.updateStatus(id, status);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        svc.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void delete(@PathVariable Long id) {
+    orderService.delete(id);
+  }
 }

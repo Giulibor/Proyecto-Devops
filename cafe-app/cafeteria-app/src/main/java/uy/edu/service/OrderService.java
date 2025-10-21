@@ -6,7 +6,6 @@ import uy.edu.metrics.OrderMetrics;
 import uy.edu.model.CoffeeOrder;
 import uy.edu.model.OrderStatus;
 import uy.edu.repository.CoffeeOrderRepository;
-import uy.edu.repository.ProductRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.List;
@@ -18,14 +17,11 @@ public class OrderService {
   private final CoffeeOrderRepository coffeeOrderRepo;
   private final OrderMetrics metrics;
   private final MeterRegistry meterRegistry;
-  private final ProductRepository productRepo;
 
-  public OrderService(CoffeeOrderRepository coffeeOrderRepo, OrderMetrics metrics, MeterRegistry meterRegistry,
-      ProductRepository productRepo) {
+  public OrderService(CoffeeOrderRepository coffeeOrderRepo, OrderMetrics metrics, MeterRegistry meterRegistry) {
     this.coffeeOrderRepo = coffeeOrderRepo;
     this.metrics = metrics;
     this.meterRegistry = meterRegistry;
-    this.productRepo = productRepo;
   }
 
   public CoffeeOrder create(CoffeeOrder o) {

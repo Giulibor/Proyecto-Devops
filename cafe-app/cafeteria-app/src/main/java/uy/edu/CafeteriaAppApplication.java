@@ -1,4 +1,4 @@
-package uy.edu.ucu.cafeteria_app;
+package uy.edu;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
