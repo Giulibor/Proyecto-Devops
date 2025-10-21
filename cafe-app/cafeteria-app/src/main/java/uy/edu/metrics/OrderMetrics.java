@@ -11,10 +11,10 @@ public class OrderMetrics {
     private final Counter delivered;
 
     public OrderMetrics(MeterRegistry registry) {
-        this.created = Counter.builder("coffee_orders_created_total")
+        this.created = Counter.builder("coffee_orders_created")
                 .description("Total de pedidos creados")
                 .register(registry);
-        this.delivered = Counter.builder("coffee_orders_delivered_total")
+        this.delivered = Counter.builder("coffee_orders_delivered")
                 .description("Total de pedidos entregados")
                 .register(registry);
     }

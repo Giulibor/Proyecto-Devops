@@ -118,7 +118,7 @@ data:
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(coffee_orders_created_total[5m])) by (product)",
+              "expr": "sum(increase(coffee_orders_total[5m])) by (product)",
               "legendFormat": "created - {{product}}",
               "range": true,
               "refId": "A"

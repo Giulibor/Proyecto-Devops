@@ -34,7 +34,7 @@ public class OrderService {
 
     int qty = Math.max(1, saved.getQuantity());
     meterRegistry
-        .counter("coffee_orders_created_total", "product", product)
+        .counter("coffee_orders_created", "product", product)
         .increment(qty);
 
     return saved;
@@ -67,7 +67,7 @@ public class OrderService {
 
       int qty = Math.max(1, saved.getQuantity());
       meterRegistry
-          .counter("coffee_orders_delivered_total", "product", product)
+          .counter("coffee_orders_delivered", "product", product)
           .increment(qty);
     }
 
