@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cafeteria-rules
+  namespace: monitoring
+  labels:
+    release: kube-prom-stack
+spec:
+  groups:
+    - name: cafeteria-order-rates
+      interval: 30s
+      rules:
+        - alert: HighOrderRate
+          expr: sum(increase(coffee_orders_created_total[5m])) by (product) > 10
+          for: 1m
+          labels: { severity: warning, team: cafeteria}
+          annotations:
+            summary: "Alto volumen de órdenes para {{ $labels.product }}"
+            description: "El producto {{ $labels.product }} superó el umbral en 5m."
