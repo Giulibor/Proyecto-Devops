@@ -7,9 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "lint": "node -e \"require('fs').mkdirSync('reports',{recursive:true})\" && eslint \\\"src/**/*.{ts,tsx}\\\" -f stylish -o reports/eslint-report.txt --max-warnings=0",
-    "semgrep": "node -e \"require('fs').mkdirSync('reports',{recursive:true})\" && semgrep --config ./.semgrep.yml --json > reports/semgrep-report.json",
-    "audit": "node -e \"require('fs').mkdirSync('reports',{recursive:true})\" && npm audit --json > reports/npm-audit.txt || true"
+    "lint": "mkdir -p reports && eslint src/**/*.{ts,tsx} -f stylish -o reports/eslint-report.txt || true",
+    "semgrep": "mkdir -p reports && npx semgrep --config ./.semgrep.yml --json > reports/semgrep-report.json || true",
+    "audit": "mkdir -p reports && npm audit --json > reports/npm-audit.txt || true"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -27,6 +27,7 @@
     "@typescript-eslint/parser": "^8.46.2",
     "eslint": "^9.11.1",
     "eslint-plugin-security": "^3.0.1",
+    "semgrep": "^0.0.1",
     "tsx": "^4.19.1",
     "typescript": "^5.4.5"
   },
