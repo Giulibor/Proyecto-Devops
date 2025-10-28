@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traveltrack-config
+  namespace: {{ .Values.namespace }}
+data:
+  APP_VERSION: {{ .Values.appVersion | quote }}
