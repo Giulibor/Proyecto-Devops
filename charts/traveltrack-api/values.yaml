@@ -1,0 +1,27 @@
+image:
+  repository: "<tu-registro>/traveltrack-api"
+  tag: "0.1.0"           # no usar latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  appVersion: "0.1.0"
+  port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 300m
+    memory: 512Mi
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

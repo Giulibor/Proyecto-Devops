@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "traveltrack.fullname" . }}
+  labels:
+    {{ include "traveltrack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{ include "traveltrack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{ include "traveltrack.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{ toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: {{ include "traveltrack.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.port }}
+              protocol: TCP
+          env:
+            - name: APP_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ printf "%s-config" (include "traveltrack.fullname" .) }}
+                  key: APP_VERSION
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ printf "%s-config" (include "traveltrack.fullname" .) }}
+                  key: PORT
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            {{ toYaml .Values.resources | nindent 12 }}
+      nodeSelector:
+        {{ toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+        {{ toYaml .Values.affinity | nindent 8 }}

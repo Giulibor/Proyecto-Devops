@@ -1,0 +1,11 @@
+1. Para probar la API, hacer port-forward:
+
+   kubectl -n {{ .Release.Namespace }} port-forward deploy/{{ include "traveltrack.fullname" . }} 8080:{{ .Values.service.port }}
+
+2. Health check:
+
+   curl http://localhost:8080/health
+
+3. Versión (inyectada por ConfigMap):
+
+   curl http://localhost:8080/api/version

@@ -46,3 +46,7 @@ infra/terraform/.terraform
 infra/terraform/.terraform.lock.hcl
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.backup
+
+# Traveltrack specific
+traveltrack-api/reports/
+traveltrack-api/coverage/
