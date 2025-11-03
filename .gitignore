@@ -36,7 +36,10 @@
 */.vscode/
 */.idea/
 */.DS_Store
+.DS_Store
 */Thumbs.db
+.vscode/
+.cache
 
 # Terraform
 infra/terraform/.terraform

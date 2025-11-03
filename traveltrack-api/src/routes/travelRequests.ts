@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { store } from '../store'
-import type { TravelRequest } from '../types'
+import { store } from '../store.js'
+import type { TravelRequest } from '../types.js'
 
 const router = Router()
 

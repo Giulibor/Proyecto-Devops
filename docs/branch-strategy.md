@@ -68,3 +68,28 @@ feature/*      fix/*      refactor/*
                      \______________________^
                            (PR + tag)
 ```
+
+## Estrategia específica del Laboratorio 3
+
+Para el Laboratorio 3 se utiliza una estructura de ramas especial que facilita el desarrollo y la integración de las funcionalidades específicas del laboratorio:
+
+* **`main`** (producción): rama estable que contiene la versión final y revisada del proyecto.
+* **`pre-release`** (preproducción): rama donde se integran las funcionalidades de laboratorio y otras mejoras antes de pasar a producción.
+* **`laboratorio3`**: rama base de desarrollo exclusiva para el Laboratorio 3, donde se integran las ramas individuales del laboratorio.
+* Ramas de desarrollo específicas: `laboratorio3-xx-nombre`, donde `xx` es el número de la tarea o funcionalidad y `nombre` una breve descripción.
+
+### Flujo de merges
+
+Las ramas individuales de desarrollo (`laboratorio3-xx-nombre`) se mergean primero a la rama `laboratorio3`. Cuando `laboratorio3` está estable, se hace un merge a `pre-release`. Finalmente, cuando `pre-release` está listo, se realiza un merge a `main`.
+
+### Diagrama
+
+```
+       main
+        ▲
+    pre-release
+        ▲
+   laboratorio3
+     ▲       ▲
+lab3-01   lab3-02
+```
