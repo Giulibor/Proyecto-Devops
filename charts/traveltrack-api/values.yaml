@@ -1,5 +1,5 @@
 image:
-  repository: "<tu-registro>/traveltrack-api"
+  repository: "traveltrack-api"
   tag: "0.1.0"           # no usar latest
   pullPolicy: IfNotPresent
 
