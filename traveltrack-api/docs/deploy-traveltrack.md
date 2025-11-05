@@ -1,116 +1,140 @@
-💯 Exacto, muy bien que lo notaste — estás pensando con mentalidad DevOps de verdad 👏
-# Deploy
+# Guía de despliegue y pruebas – TravelTrack API
 
-## 🚀 0) Iniciar Minikube (si no está corriendo)
+Esta guía explica cómo **empaquetar** y **probar** la app en Kubernetes **sin instalar Helm en ls Mac**, usando un contenedor de Helm para renderizar el chart a YAML y `kubectl` para aplicarlo.
+
+---
+
+## 1) Prerrequisitos
+
+* Docker instalado.
+* Minikube instalado.
+* `kubectl` accesible (viene con minikube).
+* Repositorio clonado y posicionado en la **raíz** (donde está `charts/`):
 
 ```bash
-minikube start --driver=docker --memory=4096 --cpus=2
+cd /ruta/a/Proyecto-Devops
 ```
 
-Esto crea el cluster y levanta el daemon Docker interno que usa K8s.
-Podés verificarlo con:
+---
+
+## 2) Iniciar Minikube
 
 ```bash
+minikube start --driver=docker --memory=2048 --cpus=2
 minikube status
 kubectl get nodes
 ```
 
-Deberías ver el nodo `minikube` en estado `Ready`.
-
 ---
 
-## 🔄 1) Usar el Docker dentro de Minikube
+## 3) Construir la imagen (elegí UNA de estas dos variantes)
 
-Por defecto, cuando hacés `docker build`, estás usando **el Docker del host**.
-Para que la imagen quede *dentro del entorno de Minikube* (sin necesidad de push/pull a un registry), ejecutá:
+### Build **dentro de Minikube** (recomendado para evitar registries)
+
+> La imagen queda disponible directamente en el cluster.
 
 ```bash
+# Cambiar Docker CLI para usar el daemon de Minikube
 eval $(minikube docker-env)
-```
 
-Esto cambia temporalmente las variables de entorno:
-
-* `DOCKER_HOST`
-* `DOCKER_CERT_PATH`
-* `DOCKER_TLS_VERIFY`
-
-Y hace que **tu consola actual use el Docker daemon interno de Minikube**.
-
-Podés comprobarlo con:
-
-```bash
-docker info | grep -i "name"
-```
-
-Debería mostrar algo como: `Name: minikube`.
-
----
-
-## 🧱 2) (Re)build de la imagen dentro del daemon de Minikube
-
-```bash
+# Build (estando en la raíz del repo)
 export VERSION=0.1.0
 docker build -t traveltrack-api:$VERSION ./traveltrack-api
-```
 
-Ahora la imagen queda disponible directamente dentro del Minikube, sin hacer `minikube image load`.
-
-Podés comprobarlo:
-
-```bash
+# (Opcional) verificar que la imagen quedó en el daemon de minikube
 minikube ssh docker images | grep traveltrack
 ```
 
+> **Tip:** Podés alternar entre daemons cuando lo necesites:
+>
+> * Usar Minikube para **builds** → `eval $(minikube docker-env)`
+> * Volver al Docker del **host** → `eval $(minikube docker-env -u)`
+
 ---
 
-## ⚙️ 3) Instalar el chart con Helm
+## 4) Renderizar el chart Helm a YAML (sin Helm instalado)
 
-(Si ya hiciste estos pasos, solo confirmá.)
+**Importante:** Para que el contenedor de Helm **vea el repo** con `-v "$PWD"`, corré esto con el **Docker del host**:
 
 ```bash
-kubectl create namespace traveltrack || true
-helm install tt charts/traveltrack-api -n traveltrack
-kubectl get all -n traveltrack
+# usar Docker del host para montar la carpeta
+eval $(minikube docker-env -u)   
+
+docker run --rm -v "$PWD":/work -w /work \
+  alpine/helm:3.15.3 \
+  template tt ./charts/traveltrack-api \
+  -n traveltrack \
+  --values ./charts/traveltrack-api/values.yaml \
+  > ./deploy/tt.yaml
+```
+
+Esto genera `tt.yaml` con **todos los manifiestos** listos para aplicar.
+
+---
+
+## 5) Aplicar el YAML al cluster
+
+```bash
+# Cambiar Docker CLI para usar el daemon de Minikube
+eval $(minikube docker-env)
+
+kubectl create ns traveltrack || true
+kubectl apply -n traveltrack -f ./deploy/tt.yaml
+kubectl get deploy,po,svc -n traveltrack
 ```
 
 ---
 
-## 🔎 4) Port-forward y test de endpoints
+## 6) Probar la API
 
 ```bash
 kubectl -n traveltrack port-forward deploy/tt-traveltrack-api 8080:8080 &
-sleep 3
+sleep 2
 curl -s localhost:8080/health
 curl -s localhost:8080/api/version
+curl -s -X POST localhost:8080/api/travel-requests \
+  -H 'content-type: application/json' \
+  -d '{"employee":"Ana López","destination":"Madrid","days":4}'
+curl -s localhost:8080/api/travel-requests
 ```
 
-Deberías obtener:
+Deberías ver:
 
-```json
-{"status":"ok"}
-{"version":"0.1.0"}
-```
+* `{"status":"ok"}`
+* `{"version":"0.1.0"}`
 
 ---
 
-## 🧹 5) (Opcional) Volver al Docker local
+## 7) Troubleshooting rápido
 
-Si luego querés volver a tu daemon normal:
+| Síntoma                                            | Posible causa                                                                           | Fix                                                                                            |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `Error: path "./charts/traveltrack-api" not found` | El contenedor no ve el repo montado. Usaste el daemon de Minikube para el `docker run`. | Ejecutá `eval $(minikube docker-env -u)` y volvé a correr el `docker run ... helm template`.   |
+| `ImagePullBackOff`                                 | El cluster no tiene la imagen.                                                          | Variante A: build dentro de Minikube. Variante B: `minikube image load traveltrack-api:0.1.0`. |
+| `CrashLoopBackOff`                                 | App no arranca o puerto incorrecto.                                                     | `kubectl logs -n traveltrack deploy/tt-traveltrack-api`. Chequeá `PORT` y probes.              |
+| `/health` no responde                              | Probes/puertos mal.                                                                     | Confirmá `config.port` y `service.port` en `values.yaml` (8080).                               |
+| `helm: repo charts not found`                      | Usaste `charts/traveltrack-api` sin `./`.                                               | Usar **ruta local**: `./charts/traveltrack-api`.                                               |
+
+---
+
+## 8) Limpieza
 
 ```bash
-eval $(minikube docker-env -u)
+kubectl delete -n traveltrack -f tt.yaml
+kubectl delete ns traveltrack
+# (opcional)
+minikube stop
 ```
 
 ---
 
-✅ **Resumen conceptual**
+## 9) Resumen de alternancia Docker (mental model)
 
-* `minikube start` → levanta el cluster.
-* `eval $(minikube docker-env)` → redirige Docker CLI hacia el daemon dentro del cluster.
-* `docker build` → construye la imagen *dentro de Minikube*.
-* `helm install` → despliega usando esa imagen local (sin registry).
-* `curl /health` → verifica que todo anda.
+* **Build imágenes**
 
----
+  * Dentro del cluster → `eval $(minikube docker-env)` + `docker build ...`
+  * En host + cargar → `eval $(minikube docker-env -u)` + `docker build ...` + `minikube image load ...`
 
-¿Querés que te prepare un bloque para agregar esto al README bajo “Smoke test con Minikube” (con todos los comandos listos y numerados)?
+* **Render Helm en contenedor** (monta el repo con `-v "$PWD"`):
+  → **Siempre con Docker del host**: `eval $(minikube docker-env -u)`
+

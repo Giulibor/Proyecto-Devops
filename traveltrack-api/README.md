@@ -32,6 +32,21 @@ DOCKER_BUILDKIT=1 docker build -t $IMAGE .
 docker run --rm -e APP_VERSION=0.1.0 -p 8080:8080 $IMAGE
 ```
 
+## Uso de Helm
+
+Helm se utiliza para generar un manifiesto YAML (`tt.yaml`) que se aplica en Kubernetes para desplegar la aplicación de forma sencilla y reproducible.
+
+## Makefile local
+
+Se incluye un Makefile local que permite automatizar el flujo de empaquetado y despliegue sin necesidad de instalar Helm directamente. Los comandos principales son:
+
+- `make render`: genera el manifiesto YAML a partir de las plantillas.
+- `make apply`: aplica el manifiesto generado en el clúster Kubernetes.
+- `make smoke`: ejecuta pruebas básicas para verificar el despliegue.
+- `make clean`: elimina recursos y limpia el entorno.
+
+Este flujo facilita la gestión del ciclo de vida de la aplicación de manera rápida y sencilla.
+
 ## Lint
 
 ```bash
@@ -45,7 +60,7 @@ npm run lint
 
 ---
 
-## 🗺️ Roadmap & Estado
+## Roadmap & Estado
 
 ### 0. Fundaciones (MVP)
 
@@ -57,7 +72,7 @@ npm run lint
 ### 1. Empaquetado
 
 - [x] Build local `traveltrack-api:0.1.0`
-- [ ] Multi-arch (buildx)
+- [x] Multi-arch (buildx)
 - [ ] Push a registry (tag inmutable)
 
 ### 2. Config externa (K8s)
@@ -105,7 +120,7 @@ npm run lint
 
 ---
 
-## 🌿 Estrategia de ramas (branch strategy)
+## Estrategia de ramas (branch strategy)
 
 Este laboratorio utiliza una estrategia de ramas jerárquica para mantener un flujo de integración controlado y reproducible.
 
@@ -130,7 +145,7 @@ main ← pre-release ← laboratorio3 ← feature/laboratorio3-xx-*
     git checkout laboratorio3
     git pull
     git checkout -b laboratorio3-01-fundaciones
-    ````
+    ```
 
 2. Desarrollar y testear localmente (o en minikube).
 3. Crear Pull Request hacia `laboratorio3` para revisión.
@@ -145,11 +160,11 @@ Mantener un flujo ordenado que permita:
 - Entregas parciales sin afectar la rama estable.
 - Integración progresiva de los laboratorios en el repositorio central.
 
-Perfecto 💪 — acá tenés un diagrama ASCII simple y limpio, ideal para el README (sin necesidad de renderizado adicional):
+Perfecto — acá tenés un diagrama ASCII simple y limpio, ideal para el README (sin necesidad de renderizado adicional):
 
 ---
 
-### 🧩 Diagrama de flujo de ramas
+### Diagrama de flujo de ramas
 
 ```
      ┌────────────┐
