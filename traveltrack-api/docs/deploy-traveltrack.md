@@ -1,139 +1,179 @@
 # Guía de despliegue y pruebas – TravelTrack API
 
-Esta guía explica cómo **empaquetar** y **probar** la app en Kubernetes **sin instalar Helm en ls Mac**, usando un contenedor de Helm para renderizar el chart a YAML y `kubectl` para aplicarlo.
+Este documento explica el flujo recomendado para desplegar la API TravelTrack usando GHCR como registro principal, con soporte para imágenes multi-arquitectura y despliegue directo desde el registry. También incluye alternativas para desarrollo local y pruebas.
+
+> **Compatibilidad Windows / WSL2**
+> Este procedimiento fue validado en macOS/Linux. En Windows se recomienda ejecutar desde **WSL2 (Ubuntu)** y usar el **Makefile específico**:
+>
+> - Guía: `docs/deploy-traveltracker-from-windows-wsl2.md`
+> - Makefile: `make -f Makefile.windows <target>`
+>
+> Ejemplos:
+> ```bash
+> make -f Makefile.windows doctor
+> make -f Makefile.windows deploy-from-ghcr
+> ```
 
 ---
 
-## 1) Pre-requisitos
+## 1) Preparación
 
-* Docker, Minikube, kubectl.
-* Repositorio `https://github.com/Giulibor/Proyecto-Devops.git` clonado.
-* Trabajar desde el directorio `traveltrack-api`.
+### Variables y entorno
 
----
+Las variables principales se definen en el archivo `.env`:
 
-## 2) Iniciar Minikube
+- `APP_VERSION`: versión lógica de la API (ej. `1.0.0`).
+- `IMAGE_VERSION`: versión de imagen (ej. `YYYY.MM.DD.HH.MM` o `auto`).
+- `NAMESPACE`: namespace Kubernetes (por defecto `traveltrack`).
+
+### Comando rápido: verificar versiones y entorno
 
 ```bash
-minikube start --driver=docker --memory=2048 --cpus=2
-minikube status
-kubectl get nodes
+make print-version
+make doctor
+```
+
+`print-version` muestra las variables actuales que se usarán en el pipeline.  
+`doctor` valida que las herramientas necesarias estén instaladas y configuradas correctamente.
+
+---
+
+## 2) Build y publicación multi-arch (recomendado)
+
+Este flujo construye imágenes multi-arquitectura (`linux/amd64, linux/arm64`) y las publica en GitHub Container Registry (GHCR), sin almacenar la imagen localmente.
+
+### Comando rápido: build y push multi-arch
+
+```bash
+make buildx-push
+```
+
+Este target usa Docker Buildx para:
+
+- Construir imágenes multi-arquitectura.
+- Etiquetar con `IMAGE_VERSION`.
+- Publicar directamente en GHCR bajo `ghcr.io/$GH_USER/traveltrack-api`.
+
+### Comando rápido: publicar en GHCR (solo tag y push)
+
+```bash
+make ghcr-publish IMAGE_VERSION=<opcional>
+```
+
+Permite publicar una imagen ya construida y etiquetada en GHCR.
+
+> **Nota:** Para usar estos comandos, exporta las credenciales:
+> ```bash
+> export GH_USER=<tu_usuario_github>
+> export GH_TOKEN=<tu_token_github>
+> ```
+
+---
+
+## 3) Deploy desde GHCR (flujo real)
+
+Para desplegar en Kubernetes usando la imagen publicada en GHCR, se recomienda este flujo.
+
+### Comando rápido: renderizar y aplicar manifiestos
+
+```bash
+make deploy-from-ghcr
+```
+
+Este target:
+
+- Renderiza los manifiestos Helm con `image.pullPolicy=Always` para asegurar que siempre se use la imagen del registry.
+- Aplica el manifiesto al cluster en el namespace configurado.
+
+---
+
+## 4) Alternativas locales
+
+Para desarrollo offline o pruebas rápidas, existen opciones para construir y usar la imagen localmente sin pasar por GHCR.
+
+### Build dentro de Minikube (sin push)
+
+```bash
+make build-in-minikube
+```
+
+Construye la imagen directamente en el daemon Docker de Minikube, disponible para el cluster sin necesidad de push ni carga adicional.
+
+### Build en el host y cargar a Minikube
+
+```bash
+make use-host-docker
+make build-host
+```
+
+Construye la imagen en el Docker del host y luego la carga al cluster Minikube con:
+
+```bash
+minikube image load traveltrack-api:"$IMAGE_VERSION"
 ```
 
 ---
 
-## 3) Construir la imagen
+## 5) Test y validación
 
-### Build **dentro de Minikube**
-
-> La imagen queda disponible directamente en el cluster.
+Para validar que la API está funcionando correctamente, se puede ejecutar:
 
 ```bash
-# Usa la variable de entorno IMAGE_VERSION en (.env) o el valor por defecto definido en Makefile
-set -a
-source .env
-set +a
-echo "[IMAGE_VERSION: $IMAGE_VERSION]"
-
-# Cambiar Docker CLI para usar el daemon de Minikube
-eval $(minikube docker-env)
-
-# Build
-docker build -t traveltrack-api:$IMAGE_VERSION .
-
-# Verificar que la imagen quedó en el daemon de minikube
-minikube ssh docker images | grep traveltrack
+make smoke
 ```
+
+Este comando:
+
+- Realiza un port-forward temporal al pod.
+- Consulta endpoints clave como `/health` y `/api/version`.
+- Confirma que la API responde y reporta su versión.
 
 ---
 
-## 4) Renderizar el chart Helm a YAML (sin Helm instalado)
+## 6) Cleanup
+
+Para limpiar los recursos del cluster y detener Minikube:
 
 ```bash
-# usar Docker del host para montar la carpeta
-eval $(minikube docker-env -u)   
-
-docker run --rm -v "$PWD":/work -w /work \
-  alpine/helm:3.15.3 \
-  template tt ./charts/traveltrack-api \
-  -n traveltrack \
-  --values ./charts/traveltrack-api/values.yaml \
-  > ./deploy/tt.yaml
+make uninstall
+make delete-ns
+make stop-minikube
 ```
 
-Esto genera `tt.yaml` con **todos los manifiestos** listos para aplicar.
+- `uninstall` elimina los recursos aplicados.
+- `delete-ns` borra el namespace completo.
+- `stop-minikube` detiene el cluster local.
 
 ---
 
-## 5) Aplicar el YAML al cluster
+## 7) Notas operativas y diagnóstico
 
-```bash
-# Cambiar Docker CLI para usar el daemon de Minikube
-eval $(minikube docker-env)
+- Si un `docker run -v "$PWD":/work` no accede a tu código, puede ser porque el CLI apunta al daemon Docker de Minikube. Regresa al Docker del host con:
 
-kubectl create namespace traveltrack --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n traveltrack -f ./deploy/tt.yaml
-kubectl get deploy,po,svc -n traveltrack
-```
+  ```bash
+  eval $(minikube docker-env -u)
+  ```
 
----
+- Si el Pod queda en estado `ImagePullBackOff`, significa que el cluster no puede obtener la imagen. Soluciones:
 
-## 6) Probar la API
+  - Usar build dentro de Minikube (`make build-in-minikube`).
+  - Cargar la imagen localmente (`minikube image load`).
+  - Usar imágenes publicadas en GHCR.
 
-```bash
-kubectl -n traveltrack port-forward deploy/tt-traveltrack-api 8080:8080 &
-sleep 2
-curl -s localhost:8080/health
-curl -s localhost:8080/api/version
-curl -s -X POST localhost:8080/api/travel-requests \
-  -H 'content-type: application/json' \
-  -d '{"employee":"Ana López","destination":"Madrid","days":4}'
-curl -s localhost:8080/api/travel-requests
-```
+- Para inspeccionar un manifest multi-arch publicado:
+
+  ```bash
+  docker buildx imagetools inspect ghcr.io/$GH_USER/traveltrack-api:"$IMAGE_VERSION"
+  ```
 
 ---
 
-## 7) Troubleshooting rápido
+## 8) Resumen técnico
 
-| Síntoma                                            | Posible causa                                                                           | Fix                                                                                            |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `Error: path "./charts/traveltrack-api" not found` | El contenedor no ve el repo montado. Usaste el daemon de Minikube para el `docker run`. | Ejecutá `eval $(minikube docker-env -u)` y volvé a correr el `docker run ... helm template`.   |
-| `ImagePullBackOff`                                 | El cluster no tiene la imagen.                                                          | Variante A: build dentro de Minikube. Variante B: `minikube image load traveltrack-api:$IMAGE_VERSION`. |
-| `CrashLoopBackOff`                                 | App no arranca o puerto incorrecto.                                                     | `kubectl logs -n traveltrack deploy/tt-traveltrack-api`. Chequeá `PORT` y probes.              |
-| `/health` no responde                              | Probes/puertos mal.                                                                     | Confirmá `config.port` y `service.port` en `values.yaml` (8080).                               |
-| `helm: repo charts not found`                      | Usaste `charts/traveltrack-api` sin `./`.                                               | Usar **ruta local**: `./charts/traveltrack-api`.                                               |
+- **Docker Buildx**: construcción y publicación multi-arquitectura en GHCR.
+- **GitHub Container Registry (GHCR)**: registro principal para imágenes inmutables y multi-arch.
+- **Minikube**: cluster local con daemon Docker alternativo para desarrollo offline.
+- **Helm (contenedor)**: renderizado de manifiestos Kubernetes sin instalar Helm localmente.
+- **kubectl**: gestión y aplicación de recursos en Kubernetes.
 
----
-
-## 8) Limpieza
-
-```bash
-kubectl delete -n traveltrack -f ./deploy/tt.yaml
-kubectl delete ns traveltrack
-# (opcional)
-minikube stop
-```
-
----
-
-## 9) Resumen de alternancia Docker (mental model)
-
-* **Build imágenes**
-
-  * Dentro del cluster → `eval $(minikube docker-env)` + `docker build ...`
-  * En host + cargar → `eval $(minikube docker-env -u)` + `docker build ...` + `minikube image load ...`
-
-* **Render Helm en contenedor** (monta el repo con `-v "$PWD"`):
-  → **Siempre con Docker del host**: `eval $(minikube docker-env -u)`
-
----
-
-### 10) Imagen pública del proyecto
-
-La imagen está disponible en GitHub Container Registry:
-
-```bash
-docker pull ghcr.io/cardo88/traveltrack-api:$IMAGE_VERSION
-```
-
-El Helm chart (`make render`) y los manifiestos (`tt.yaml`) la utilizan mediante tag inmutable.
+Este flujo prioriza reproducibilidad, portabilidad y despliegue seguro desde un registry confiable.

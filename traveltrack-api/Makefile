@@ -40,6 +40,8 @@ HELM_IMG      ?= alpine/helm:3.15.3
 
 # -------- Buildx / Multi-arch --------
 PLATFORMS     ?= linux/amd64,linux/arm64
+# Multi-arch por defecto (true|false)
+MULTIARCH    ?= true
 
 # -------- GHCR (GitHub Container Registry) --------
 GH_USER       ?= 
@@ -67,7 +69,7 @@ status: ## Muestra estado de minikube y nodos
 	kubectl get nodes
 
 # -------- Alternar Docker daemon --------
-.PHONY: use-minikube-docker use-host-docker which-docker
+.PHONY: use-minikube-docker use-host-docker which-docker doctor
 use-minikube-docker: ## Cambia Docker CLI al daemon de Minikube
 	@eval "$$(minikube docker-env)"; \
 	echo "[OK] Docker CLI apuntando al daemon de Minikube."; \
@@ -81,6 +83,17 @@ use-host-docker: ## Restaura Docker CLI del host
 which-docker: ## Indica a qué daemon Docker apunta la CLI
 	@echo "DOCKER_HOST=$$DOCKER_HOST"
 	@docker info | grep -i 'name' || true
+
+doctor: ## Diagnóstico rápido del entorno (Docker, Minikube, kubectl, buildx)
+	@echo "=== DOCTOR ==="
+	@echo "[OS] uname -s: $$(uname -s)"
+	@echo "[Docker] version:"; docker version --format '{{.Server.Version}}' 2>/dev/null || echo "no disponible"
+	@echo "[Docker] daemon name:"; docker info 2>/dev/null | grep -i '^ name' || echo "no disponible"
+	@echo "[kubectl] client:"; kubectl version --client --short 2>/dev/null || echo "no disponible"
+	@echo "[minikube] version:"; minikube version 2>/dev/null || echo "no disponible"
+	@echo "[buildx] info:"; docker buildx version 2>/dev/null || echo "no disponible"
+	@echo "DOCKER_HOST=$$DOCKER_HOST"
+	@echo "Sugerencia: ejecutar en macOS/Linux o Windows con WSL2. Si 'docker run -v \"$$PWD\":/work' no ve el repo, use 'make use-host-docker'."
 
 # -------- Builds de imagen --------
 .PHONY: build-in-minikube build-host load-image
@@ -127,7 +140,8 @@ ghcr-tag: ## Etiqueta la imagen local para GHCR
 ghcr-push: ## Publica la imagen en GHCR con tag inmutable
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
 	docker push $(GHCR_IMAGE):$(IMAGE_VERSION)
-ghcr-publish: ## Login, tag y push a GHCR
+ghcr-publish: ## Publica en GHCR (multi-arch por defecto). Use MULTIARCH=false para single-arch
+ifeq ($(MULTIARCH),false)
 	$(MAKE) ghcr-login ghcr-tag ghcr-push
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
 	@echo "[INFO] Actualizando $(VALUES_FILE) con repository en GHCR (vía yq en contenedor)"
@@ -139,7 +153,11 @@ ghcr-publish: ## Login, tag y push a GHCR
 	  mikefarah/yq:4 \
 	  -i '.image.tag = "$(IMAGE_VERSION)"' $(VALUES_FILE)
 	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(IMAGE_VERSION)"
-	
+else
+	@echo "[INFO] MULTIARCH=$(MULTIARCH) → ejecutando buildx-push"
+	$(MAKE) buildx-push
+endif
+
 update-values: ## Actualiza repository/tag en values.yaml usando yq en contenedor
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
 	@echo "[INFO] Actualizando $(VALUES_FILE) con repository/tag en GHCR (vía yq en contenedor)"
@@ -202,7 +220,7 @@ clean: ## Limpia archivos generados
 	@echo "[CLEAN] Limpieza completada"
 # -------- Publicar multi-arch en GHCR --------
 .PHONY: buildx-push
-buildx-push: buildx-create ghcr-login ## Construye y publica imagen multi-arch (linux/amd64,linux/arm64) en GHCR
+buildx-push: buildx-create ghcr-login ## Construye y publica imagen multi-arch (linux/amd64,linux/arm64) en GHCR [ruta por defecto de ghcr-publish]
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
 	@echo "[BUILD] Buildx multi-arch: $(PLATFORMS) -> $(GHCR_IMAGE):$(IMAGE_VERSION)"
 	docker buildx build \

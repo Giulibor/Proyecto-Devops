@@ -12,6 +12,11 @@ Microservicio HTTP (Node.js + TypeScript) para gestionar solicitudes de viajes c
 - `GET /api/travel-requests` → lista todas
 - `PATCH /api/travel-requests/:id/approve` → aprueba una solicitud
 
+## Almacenamiento de datos
+
+- Los datos se almacenan **en memoria** (no hay persistencia).
+
+
 ## Ejecutar local
 
 ```bash
@@ -21,6 +26,8 @@ export APP_VERSION=0.1.0
 npm run dev
 # curl http://localhost:8080/health
 ```
+
+- La versión se inyecta por `APP_VERSION` (ideal para ConfigMap).
 
 ## Build y run con Docker
 
@@ -46,11 +53,6 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 - `make clean`: elimina recursos y limpia el entorno.
 
 Este flujo facilita la gestión del ciclo de vida de la aplicación de manera rápida y sencilla.
-
-## Notas
-
-- Los datos se almacenan **en memoria** (no hay persistencia).
-- La versión se inyecta por `APP_VERSION` (ideal para ConfigMap).
 
 ---
 
@@ -184,3 +186,49 @@ Perfecto — acá tenés un diagrama ASCII simple y limpio, ideal para el README
 └────────────┘   └────────────┘
 
 ```
+
+
+---
+
+## Estructura y documentación del proyecto
+
+El repositorio está organizado para mantener el código fuente, la infraestructura y la documentación de manera modular y reproducible:
+
+```
+traveltrack-api/
+├── src/                       # Código fuente (Node.js + TypeScript)
+│   ├── routes/                # Rutas y lógica
+│   │   └── travelRequests.ts  # Endpoints para solicitudes de viaje
+│   ├── config.ts              # Configuración y constantes
+│   ├── server.ts              # Inicialización del servidor Express
+│   ├── store.ts               # Almacenamiento en memoria
+│   └── types.ts               # Tipos y definiciones TypeScript
+│
+├── charts/                    # Helm Chart (plantillas para despliegue en K8s)
+├── deploy/                    # Manifiestos YAML generados automáticamente
+├── docs/                      # Documentación técnica y guías operativas
+│   ├── deploy-traveltrack.md  # Guía de despliegue principal (macOS/Linux)
+│   ├── deploy-traveltracker-from-windows-wsl2.md # Guía de despliegue desde Windows / WSL2
+│   ├── publish-to-ghcr.md     # Guía de publicación en GHCR
+│   └── Makefile referencias y notas de uso
+│
+├── Makefile                 # Automatización principal (build, deploy, GHCR)
+├── Makefile.windows         # Adaptación para entornos Windows/WSL2
+├── .env.example             # Variables de entorno de referencia
+├── Dockerfile               # Imagen base (multi-arch, sin root)
+└── README.md                # Este archivo
+```
+
+### Guías de despliegue
+
+Para realizar el despliegue completo de la aplicación:
+
+- En **macOS / Linux**: seguir `docs/deploy-traveltrack.md`  
+- En **Windows / WSL2**: seguir `docs/deploy-traveltracker-from-windows-wsl2.md`
+
+Cada guía detalla el flujo completo:
+- Preparación del entorno  
+- Construcción y publicación multi-arquitectura  
+- Despliegue desde GHCR  
+- Pruebas (smoke test)  
+- Limpieza del entorno
