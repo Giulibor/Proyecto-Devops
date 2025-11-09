@@ -138,3 +138,14 @@ minikube stop
 * **Render Helm en contenedor** (monta el repo con `-v "$PWD"`):
   → **Siempre con Docker del host**: `eval $(minikube docker-env -u)`
 
+---
+
+### 10) Imagen pública del proyecto
+
+La imagen está disponible en GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/cardo88/traveltrack-api:0.1.0
+```
+
+El Helm chart (`make render`) y los manifiestos (`tt.yaml`) la utilizan mediante tag inmutable.

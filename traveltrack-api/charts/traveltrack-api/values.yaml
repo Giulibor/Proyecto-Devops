@@ -1,6 +1,6 @@
 image:
-  repository: "traveltrack-api"
-  tag: "0.1.0"           # no usar latest
+  repository: "ghcr.io/cardo88/traveltrack-api"
+  tag: "0.1.0"
   pullPolicy: IfNotPresent
 
 replicaCount: 1
