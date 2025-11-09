@@ -94,3 +94,16 @@ config:
 ```
 
 ---
+
+## Apendice
+
+### Publicar vía Makefile
+
+```bash
+export GH_USER=<github_user>
+export GH_TOKEN=<github_token>
+make build-host VERSION=0.1.2
+make ghcr-publish VERSION=0.1.2
+```
+
+---

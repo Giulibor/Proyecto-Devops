@@ -6,14 +6,9 @@ Esta guía explica cómo **empaquetar** y **probar** la app en Kubernetes **sin 
 
 ## 1) Prerrequisitos
 
-* Docker instalado.
-* Minikube instalado.
-* `kubectl` accesible (viene con minikube).
-* Repositorio clonado y posicionado en la **raíz** (donde está `charts/`):
-
-```bash
-cd /ruta/a/Proyecto-Devops
-```
+* Docker, Minikube, kubectl.
+* Repositorio `https://github.com/Giulibor/Proyecto-Devops.git` clonado.
+* Trabajar desde el direcotrio `traveltrack-api`.
 
 ---
 
@@ -29,7 +24,7 @@ kubectl get nodes
 
 ## 3) Construir la imagen (elegí UNA de estas dos variantes)
 
-### Build **dentro de Minikube** (recomendado para evitar registries)
+### Build **dentro de Minikube**
 
 > La imagen queda disponible directamente en el cluster.
 
@@ -45,16 +40,9 @@ docker build -t traveltrack-api:$VERSION ./traveltrack-api
 minikube ssh docker images | grep traveltrack
 ```
 
-> **Tip:** Podés alternar entre daemons cuando lo necesites:
->
-> * Usar Minikube para **builds** → `eval $(minikube docker-env)`
-> * Volver al Docker del **host** → `eval $(minikube docker-env -u)`
-
 ---
 
 ## 4) Renderizar el chart Helm a YAML (sin Helm instalado)
-
-**Importante:** Para que el contenedor de Helm **vea el repo** con `-v "$PWD"`, corré esto con el **Docker del host**:
 
 ```bash
 # usar Docker del host para montar la carpeta
@@ -78,7 +66,7 @@ Esto genera `tt.yaml` con **todos los manifiestos** listos para aplicar.
 # Cambiar Docker CLI para usar el daemon de Minikube
 eval $(minikube docker-env)
 
-kubectl create ns traveltrack || true
+kubectl create namespace traveltrack --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n traveltrack -f ./deploy/tt.yaml
 kubectl get deploy,po,svc -n traveltrack
 ```
@@ -90,18 +78,16 @@ kubectl get deploy,po,svc -n traveltrack
 ```bash
 kubectl -n traveltrack port-forward deploy/tt-traveltrack-api 8080:8080 &
 sleep 2
+echo "[health]:"
 curl -s localhost:8080/health
+echo "[version]:"
 curl -s localhost:8080/api/version
+echo "[travle-request test]:"
 curl -s -X POST localhost:8080/api/travel-requests \
   -H 'content-type: application/json' \
   -d '{"employee":"Ana López","destination":"Madrid","days":4}'
 curl -s localhost:8080/api/travel-requests
 ```
-
-Deberías ver:
-
-* `{"status":"ok"}`
-* `{"version":"0.1.0"}`
 
 ---
 
@@ -120,7 +106,7 @@ Deberías ver:
 ## 8) Limpieza
 
 ```bash
-kubectl delete -n traveltrack -f tt.yaml
+kubectl delete -n traveltrack -f ./deploy/tt.yaml
 kubectl delete ns traveltrack
 # (opcional)
 minikube stop

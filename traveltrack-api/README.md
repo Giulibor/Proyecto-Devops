@@ -72,8 +72,8 @@ npm run lint
 ### 1. Empaquetado
 
 - [x] Build local `traveltrack-api:0.1.0`
-- [x] Multi-arch (buildx)
-- [ ] Push a registry (tag inmutable)
+- [ ] Multi-arch (buildx)
+- [x] Push a registry (tag inmutable)
 
 ### 2. Config externa (K8s)
 
