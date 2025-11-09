@@ -2,6 +2,8 @@
 
 Este procedimiento describe cómo autenticarse, etiquetar y subir imágenes Docker a **GitHub Container Registry (GHCR)**, manteniendo **tags inmutables** y visibilidad pública para reproducibilidad.
 
+La variable IMAGE_VERSION usa formato YYYY.MM.DD.HH.MM para builds diarios.
+
 ---
 
 ## 1. Generar un token de acceso en GitHub
@@ -51,7 +53,7 @@ docker tag traveltrack-api:$VERSION ghcr.io/$GH_USER/traveltrack-api:$VERSION
 ## 4. Subir la imagen
 
 ```bash
-docker push ghcr.io/$GH_USER/traveltrack-api:$VERSION
+docker push ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION
 ```
 
 Esto publicará la imagen en:
@@ -74,8 +76,8 @@ https://github.com/users/<github_user>/packages/container/package/traveltrack-ap
 ## 6. Verificar la imagen
 
 ```bash
-docker pull ghcr.io/$GH_USER/traveltrack-api:$VERSION
-docker image inspect ghcr.io/$GH_USER/traveltrack-api:$VERSION | grep -i digest
+docker pull ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION
+docker image inspect ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION | grep -i digest
 ```
 
 ---
@@ -85,7 +87,7 @@ docker image inspect ghcr.io/$GH_USER/traveltrack-api:$VERSION | grep -i digest
 ```yaml
 image:
   repository: "ghcr.io/<github_user>/traveltrack-api"
-  tag: "0.1.0"
+  tag: "2025.11.09.00.00"
   pullPolicy: IfNotPresent
 
 config:
@@ -102,8 +104,8 @@ config:
 ```bash
 export GH_USER=<github_user>
 export GH_TOKEN=<github_token>
-make build-host VERSION=0.1.2
-make ghcr-publish VERSION=0.1.2
+make build-host IMAGE_VERSION=0.1.2
+make ghcr-publish IMAGE_VERSION=0.1.2
 ```
 
 ---

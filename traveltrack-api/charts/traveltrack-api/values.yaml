@@ -1,6 +1,6 @@
 image:
   repository: "ghcr.io/cardo88/traveltrack-api"
-  tag: "0.1.0"
+  tag: "2025.11.09.00.00"
   pullPolicy: IfNotPresent
 
 replicaCount: 1

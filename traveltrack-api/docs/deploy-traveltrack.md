@@ -4,11 +4,11 @@ Esta guía explica cómo **empaquetar** y **probar** la app en Kubernetes **sin 
 
 ---
 
-## 1) Prerrequisitos
+## 1) Pre-requisitos
 
 * Docker, Minikube, kubectl.
 * Repositorio `https://github.com/Giulibor/Proyecto-Devops.git` clonado.
-* Trabajar desde el direcotrio `traveltrack-api`.
+* Trabajar desde el directorio `traveltrack-api`.
 
 ---
 
@@ -22,21 +22,26 @@ kubectl get nodes
 
 ---
 
-## 3) Construir la imagen (elegí UNA de estas dos variantes)
+## 3) Construir la imagen
 
 ### Build **dentro de Minikube**
 
 > La imagen queda disponible directamente en el cluster.
 
 ```bash
+# Usa la variable de entorno IMAGE_VERSION en (.env) o el valor por defecto definido en Makefile
+set -a
+source .env
+set +a
+echo "[IMAGE_VERSION: $IMAGE_VERSION]"
+
 # Cambiar Docker CLI para usar el daemon de Minikube
 eval $(minikube docker-env)
 
-# Build (estando en la raíz del repo)
-export VERSION=0.1.0
-docker build -t traveltrack-api:$VERSION ./traveltrack-api
+# Build
+docker build -t traveltrack-api:$IMAGE_VERSION .
 
-# (Opcional) verificar que la imagen quedó en el daemon de minikube
+# Verificar que la imagen quedó en el daemon de minikube
 minikube ssh docker images | grep traveltrack
 ```
 
@@ -78,11 +83,8 @@ kubectl get deploy,po,svc -n traveltrack
 ```bash
 kubectl -n traveltrack port-forward deploy/tt-traveltrack-api 8080:8080 &
 sleep 2
-echo "[health]:"
 curl -s localhost:8080/health
-echo "[version]:"
 curl -s localhost:8080/api/version
-echo "[travle-request test]:"
 curl -s -X POST localhost:8080/api/travel-requests \
   -H 'content-type: application/json' \
   -d '{"employee":"Ana López","destination":"Madrid","days":4}'
@@ -96,7 +98,7 @@ curl -s localhost:8080/api/travel-requests
 | Síntoma                                            | Posible causa                                                                           | Fix                                                                                            |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `Error: path "./charts/traveltrack-api" not found` | El contenedor no ve el repo montado. Usaste el daemon de Minikube para el `docker run`. | Ejecutá `eval $(minikube docker-env -u)` y volvé a correr el `docker run ... helm template`.   |
-| `ImagePullBackOff`                                 | El cluster no tiene la imagen.                                                          | Variante A: build dentro de Minikube. Variante B: `minikube image load traveltrack-api:0.1.0`. |
+| `ImagePullBackOff`                                 | El cluster no tiene la imagen.                                                          | Variante A: build dentro de Minikube. Variante B: `minikube image load traveltrack-api:$IMAGE_VERSION`. |
 | `CrashLoopBackOff`                                 | App no arranca o puerto incorrecto.                                                     | `kubectl logs -n traveltrack deploy/tt-traveltrack-api`. Chequeá `PORT` y probes.              |
 | `/health` no responde                              | Probes/puertos mal.                                                                     | Confirmá `config.port` y `service.port` en `values.yaml` (8080).                               |
 | `helm: repo charts not found`                      | Usaste `charts/traveltrack-api` sin `./`.                                               | Usar **ruta local**: `./charts/traveltrack-api`.                                               |
@@ -131,7 +133,7 @@ minikube stop
 La imagen está disponible en GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/cardo88/traveltrack-api:0.1.0
+docker pull ghcr.io/cardo88/traveltrack-api:$IMAGE_VERSION
 ```
 
 El Helm chart (`make render`) y los manifiestos (`tt.yaml`) la utilizan mediante tag inmutable.

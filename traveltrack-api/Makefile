@@ -20,25 +20,31 @@ help: ## Muestra esta ayuda con la lista de comandos disponibles
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
 # -------- Variables --------
-VERSION      ?= 0.1.0
-IMAGE        ?= traveltrack-api
-NAMESPACE    ?= traveltrack
-RELEASE      ?= tt
+IMAGE_VERSION ?= $(shell date +"%Y.%m.%d.%H.%M")
+APP_VERSION   ?= 1.0.0
 
-CHART_DIR    := charts/traveltrack-api
-DEPLOY_DIR   := deploy
-RENDER_FILE  := $(DEPLOY_DIR)/tt.yaml
-VALUES_FILE  := $(CHART_DIR)/values.yaml
+ifeq ($(IMAGE_VERSION),auto)
+IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
+endif
 
-HELM_IMG     ?= alpine/helm:3.15.3
+IMAGE         ?= traveltrack-api
+NAMESPACE     ?= traveltrack
+RELEASE       ?= tt
+
+CHART_DIR     := charts/traveltrack-api
+DEPLOY_DIR    := deploy
+RENDER_FILE   := $(DEPLOY_DIR)/tt.yaml
+VALUES_FILE   := $(CHART_DIR)/values.yaml
+
+HELM_IMG      ?= alpine/helm:3.15.3
 
 # -------- Buildx / Multi-arch --------
-PLATFORMS ?= linux/amd64,linux/arm64
+PLATFORMS     ?= linux/amd64,linux/arm64
 
 # -------- GHCR (GitHub Container Registry) --------
-GH_USER     ?= 
-GHCR_REG    ?= ghcr.io
-GHCR_IMAGE  := $(GHCR_REG)/$(GH_USER)/$(IMAGE)
+GH_USER       ?= 
+GHCR_REG      ?= ghcr.io
+GHCR_IMAGE    := $(GHCR_REG)/$(GH_USER)/$(IMAGE)
 
 .PHONY: _ensure-dirs
 _ensure-dirs:
@@ -80,15 +86,14 @@ which-docker: ## Indica a qué daemon Docker apunta la CLI
 .PHONY: build-in-minikube build-host load-image
 build-in-minikube: use-minikube-docker ## Construye imagen dentro de minikube
 	@echo "[BUILD] Build dentro de Minikube"
-	docker build -t $(IMAGE):$(VERSION) .
+	docker build -t $(IMAGE):$(IMAGE_VERSION) .
 
 build-host: use-host-docker ## Construye imagen en host
 	@echo "[BUILD] Build en host"
-	docker build -t $(IMAGE):$(VERSION) .
-
+	docker build -t $(IMAGE):$(IMAGE_VERSION) .
 load-image: ## Carga la imagen al cluster de Minikube
 	@echo "[UPLOAD] Cargando imagen al cluster"
-	minikube image load $(IMAGE):$(VERSION)
+	minikube image load $(IMAGE):$(IMAGE_VERSION)
 
 # -------- Buildx (multi-arch) --------
 .PHONY: buildx-create buildx-use buildx-inspect imagetools-inspect buildx-push
@@ -105,7 +110,7 @@ buildx-inspect: ## Muestra información del builder activo
 
 imagetools-inspect: ## Inspecciona el manifest multi-arch de la imagen publicada
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
-	docker buildx imagetools inspect $(GHCR_IMAGE):$(VERSION)
+	docker buildx imagetools inspect $(GHCR_IMAGE):$(IMAGE_VERSION)
 
 # -------- Publicación en GHCR --------
 .PHONY: ghcr-login ghcr-tag ghcr-push ghcr-publish ghcr-inspect update-values
@@ -117,12 +122,11 @@ ghcr-login: ## Inicia sesión en GHCR usando GH_USER y GH_TOKEN (variable de ent
 
 ghcr-tag: ## Etiqueta la imagen local para GHCR
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
-	docker tag $(IMAGE):$(VERSION) $(GHCR_IMAGE):$(VERSION)
+	docker tag $(IMAGE):$(IMAGE_VERSION) $(GHCR_IMAGE):$(IMAGE_VERSION)
 
 ghcr-push: ## Publica la imagen en GHCR con tag inmutable
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
-	docker push $(GHCR_IMAGE):$(VERSION)
-
+	docker push $(GHCR_IMAGE):$(IMAGE_VERSION)
 ghcr-publish: ## Login, tag y push a GHCR
 	$(MAKE) ghcr-login ghcr-tag ghcr-push
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
@@ -133,8 +137,8 @@ ghcr-publish: ## Login, tag y push a GHCR
 	@echo "[INFO] Actualizando $(VALUES_FILE) con tag (vía yq en contenedor)"
 	docker run --rm -v "$$PWD":/work -w /work \
 	  mikefarah/yq:4 \
-	  -i '.image.tag = "$(VERSION)"' $(VALUES_FILE)
-	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(VERSION)"
+	  -i '.image.tag = "$(IMAGE_VERSION)"' $(VALUES_FILE)
+	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(IMAGE_VERSION)"
 	
 update-values: ## Actualiza repository/tag en values.yaml usando yq en contenedor
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
@@ -142,13 +146,13 @@ update-values: ## Actualiza repository/tag en values.yaml usando yq en contenedo
 	docker run --rm -v "$$PWD":/work -w /work mikefarah/yq:4 \
 	  -i '.image.repository = "ghcr.io/$(GH_USER)/$(IMAGE)"' $(VALUES_FILE)
 	docker run --rm -v "$$PWD":/work -w /work mikefarah/yq:4 \
-	  -i '.image.tag = "$(VERSION)"' $(VALUES_FILE)
-	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(VERSION)"
+	  -i '.image.tag = "$(IMAGE_VERSION)"' $(VALUES_FILE)
+	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(IMAGE_VERSION)"
 
 ghcr-inspect: ## Verifica digest de la imagen publicada en GHCR
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
-	docker pull $(GHCR_IMAGE):$(VERSION)
-	docker image inspect $(GHCR_IMAGE):$(VERSION) --format '{{.RepoDigests}}'
+	docker pull $(GHCR_IMAGE):$(IMAGE_VERSION)
+	docker image inspect $(GHCR_IMAGE):$(IMAGE_VERSION) --format '{{.RepoDigests}}'
 
 # -------- Render (Helm en contenedor) --------
 .PHONY: render
@@ -157,6 +161,7 @@ render: _ensure-dirs use-host-docker ## Renderiza chart Helm
 	docker run --rm -v "$$PWD":/work -w /work \
 	  $(HELM_IMG) template $(RELEASE) ./$(CHART_DIR) \
 	  -n $(NAMESPACE) \
+	  --set config.appVersion=$(APP_VERSION) \	  
 	  --values ./$(VALUES_FILE) \
 	  > $(RENDER_FILE)
 	@echo "[OK] Render listo: $(RENDER_FILE)"
@@ -199,18 +204,23 @@ clean: ## Limpia archivos generados
 .PHONY: buildx-push
 buildx-push: buildx-create ghcr-login ## Construye y publica imagen multi-arch (linux/amd64,linux/arm64) en GHCR
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
-	@echo "[BUILD] Buildx multi-arch: $(PLATFORMS) -> $(GHCR_IMAGE):$(VERSION)"
+	@echo "[BUILD] Buildx multi-arch: $(PLATFORMS) -> $(GHCR_IMAGE):$(IMAGE_VERSION)"
 	docker buildx build \
 	  --platform $(PLATFORMS) \
-	  -t $(GHCR_IMAGE):$(VERSION) \
+	  -t $(GHCR_IMAGE):$(IMAGE_VERSION) \
 	  --push \
 	  .
-	@echo "[OK] Publicado: $(GHCR_IMAGE):$(VERSION)"
+	@echo "[OK] Publicado: $(GHCR_IMAGE):$(IMAGE_VERSION)"
 	@echo "[INFO] Actualizando $(VALUES_FILE) con repository y tag"
 	docker run --rm -v "$$PWD":/work -w /work \
 	  mikefarah/yq:4 \
 	  -i '.image.repository = "ghcr.io/$(GH_USER)/$(IMAGE)"' $(VALUES_FILE)
 	docker run --rm -v "$$PWD":/work -w /work \
 	  mikefarah/yq:4 \
-	  -i '.image.tag = "$(VERSION)"' $(VALUES_FILE)
-	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(VERSION)"
+	  -i '.image.tag = "$(IMAGE_VERSION)"' $(VALUES_FILE)
+	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(IMAGE_VERSION)"
+# -------- Mostrar versiones --------
+.PHONY: print-version
+print-version: ## Muestra la versión actual de la imagen y de la aplicación
+	@echo "IMAGE_VERSION = $(IMAGE_VERSION)"
+	@echo "APP_VERSION   = $(APP_VERSION)"

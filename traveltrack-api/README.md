@@ -26,7 +26,7 @@ npm run dev
 
 ```bash
 # Construir imagen con etiqueta explícita
-export IMAGE=traveltrack-api:0.1.0
+export IMAGE=traveltrack-api:2025.11.09.00.00
 DOCKER_BUILDKIT=1 docker build -t $IMAGE .
 # Ejecutar sin root dentro del contenedor (ya configurado en Dockerfile)
 docker run --rm -e APP_VERSION=0.1.0 -p 8080:8080 $IMAGE
@@ -34,7 +34,7 @@ docker run --rm -e APP_VERSION=0.1.0 -p 8080:8080 $IMAGE
 
 ## Uso de Helm
 
-Helm se utiliza para generar un manifiesto YAML (`tt.yaml`) que se aplica en Kubernetes para desplegar la aplicación de forma sencilla y reproducible.
+Helm se utiliza para generar un manifiesto YAML (`/deploy/tt.yaml`) que se aplica en Kubernetes para desplegar la aplicación de forma sencilla y reproducible.
 
 ## Makefile local
 
@@ -47,15 +47,9 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 Este flujo facilita la gestión del ciclo de vida de la aplicación de manera rápida y sencilla.
 
-## Lint
-
-```bash
-npm run lint
-```
-
 ## Notas
 
-- Los datos se almacenan **en memoria** (no hay persistencia) tal como indica la consigna.
+- Los datos se almacenan **en memoria** (no hay persistencia).
 - La versión se inyecta por `APP_VERSION` (ideal para ConfigMap).
 
 ---
@@ -72,8 +66,8 @@ npm run lint
 ### 1. Empaquetado
 
 - [x] Build local `traveltrack-api:0.1.0`
-- [ ] Multi-arch (buildx)
-- [x] Push a registry (tag inmutable)
+- [x] Multi-arch (buildx)
+- [x] Push a registry (tag inmutable - YYYY.MM.DD.HH.MM)
 
 ### 2. Config externa (K8s)
 
