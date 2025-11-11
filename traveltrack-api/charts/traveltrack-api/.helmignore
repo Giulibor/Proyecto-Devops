@@ -1,0 +1,11 @@
+# Archivos comunes a ignorar
+*.swp
+*.bak
+*.tmp
+*.orig
+.DS_Store
+node_modules/
+.git/
+.gitignore
+reports/
+dist/
