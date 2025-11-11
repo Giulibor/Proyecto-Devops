@@ -25,6 +25,7 @@ APP_VERSION   ?= 1.0.0
 
 ifeq ($(IMAGE_VERSION),auto)
 IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
+IMAGE_VERSION_CURRENT := $(IMAGE_VERSION)
 endif
 
 IMAGE         ?= traveltrack-api
@@ -59,7 +60,7 @@ _ensure-dirs:
 # -------- Minikube --------
 .PHONY: start-minikube stop-minikube status
 start-minikube: ## Inicia minikube
-	minikube start --driver=docker --memory=4096 --cpus=2
+	minikube start --driver=docker --memory=2048 --cpus=2
 
 stop-minikube: ## Detiene minikube
 	minikube stop
