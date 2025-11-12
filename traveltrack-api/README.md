@@ -17,42 +17,9 @@ Microservicio HTTP (Node.js + TypeScript) para gestionar solicitudes de viajes c
 - Los datos se almacenan **en memoria** (no hay persistencia).
 
 
-## Ejecutar local
-
-```bash
-# Requisitos: Node >= 18
-npm ci
-export APP_VERSION=0.1.0
-npm run dev
-# curl http://localhost:8080/health
-```
-
-- La versión se inyecta por `APP_VERSION` (ideal para ConfigMap).
-
-## Build y run con Docker
-
-```bash
-# Construir imagen con etiqueta explícita
-export IMAGE=traveltrack-api:2025.11.09.00.00
-DOCKER_BUILDKIT=1 docker build -t $IMAGE .
-# Ejecutar sin root dentro del contenedor (ya configurado en Dockerfile)
-docker run --rm -e APP_VERSION=0.1.0 -p 8080:8080 $IMAGE
-```
-
-## Uso de Helm
-
-Helm se utiliza para generar un manifiesto YAML (`/deploy/tt.yaml`) que se aplica en Kubernetes para desplegar la aplicación de forma sencilla y reproducible.
-
 ## Makefile local
 
-Se incluye un Makefile local que permite automatizar el flujo de empaquetado y despliegue sin necesidad de instalar Helm directamente. Los comandos principales son:
-
-- `make render`: genera el manifiesto YAML a partir de las plantillas.
-- `make apply`: aplica el manifiesto generado en el clúster Kubernetes.
-- `make smoke`: ejecuta pruebas básicas para verificar el despliegue.
-- `make clean`: elimina recursos y limpia el entorno.
-
-Este flujo facilita la gestión del ciclo de vida de la aplicación de manera rápida y sencilla.
+Se incluye un Makefile local que permite automatizar el flujo de empaquetado y despliegue.
 
 ---
 
@@ -60,57 +27,67 @@ Este flujo facilita la gestión del ciclo de vida de la aplicación de manera r�
 
 ### 0. Fundaciones (MVP)
 
-- [x] API Node+TS (health, version, travel-requests)
-- [x] ESM prod-ready (imports .js, NodeNext)
-- [x] Dockerfile sin root
-- [x] Smoke local (curl)
+- [x] API Node+TS (health, version, travel-requests)  
+- [x] ESM prod-ready (imports .js, NodeNext)  
+- [x] Dockerfile sin root  
+- [x] Smoke local (curl)  
 
 ### 1. Empaquetado
 
-- [x] Build local `traveltrack-api:0.1.0`
-- [x] Multi-arch (buildx)
-- [x] Push a registry (tag inmutable - YYYY.MM.DD.HH.MM)
+- [x] Build local `traveltrack-api:0.1.0`  
+- [x] Multi-arch (buildx)  
+- [x] Push a GHCR (tag inmutable - YYYY.MM.DD.HH.MM)  
+- [x] Test con `docker run` y `curl /health`  
 
-### 2. Config externa (K8s)
+### 2. Kubernetes
 
-- [ ] ConfigMap (APP_VERSION/PORT)
-- [ ] values.yaml comentado
+- [x] Namespace `traveltrack`  
+- [x] ConfigMap (`APP_VERSION`, `PORT`)  
+- [x] Deployment con imagen GHCR (tag inmutable, sin latest)  
+- [x] Service tipo `ClusterIP`  
+- [x] Variables de entorno desde ConfigMap  
+- [x] requests/limits básicos  
+- [x] Probes `/health`  
+- [x] Test con `kubectl port-forward` y `curl`  
 
-### 3. Helm / K8s
+### 3. Helm
 
-- [ ] Deployment + Service + ConfigMap
-- [ ] requests/limits
-- [ ] imagen con tag (no latest)
+- [ ] Estructura `charts/traveltrack-api/`  
+- [ ] Templates (`deployment.yaml`, `service.yaml`, `configmap.yaml`)  
+- [ ] `values.yaml` parametrizado  
+- [ ] Render con `make render`  
+- [ ] Apply con `make apply`  
+- [ ] Smoke test con `make smoke`  
 
 ### 4. Kyverno (políticas)
 
-- [ ] no `:latest`
-- [ ] resources obligatorios
-- [ ] runAsNonRoot
-- [ ] test de rechazo
+- [ ] No `:latest`  
+- [ ] Resources obligatorios  
+- [ ] runAsNonRoot  
+- [ ] Test de rechazo  
 
-### 5. Escaneos /reports
+### 5. Escaneos / reports
 
-- [ ] npm audit → `reports/npm-audit.txt`
-- [ ] Trivy → `reports/trivy-report.txt`
-- [ ] SlimToolkit/Dive → `reports/image-analysis.md`
+- [ ] npm audit → `reports/npm-audit.txt`  
+- [ ] Trivy → `reports/trivy-report.txt`  
+- [ ] SlimToolkit/Dive → `reports/image-analysis.md`  
 
 ### 6. KubeLinter
 
-- [ ] `reports/kubelinter.txt`
+- [ ] `reports/kubelinter.txt`  
 
 ### 7. Falco (runtime)
 
-- [ ] instalar y generar alerta → `reports/falco-event.log`
+- [ ] Instalar y generar alerta → `reports/falco-event.log`  
 
 ### 8. CI (GitHub Actions)
 
-- [ ] build & push imagen
-- [ ] audit + Trivy (artifacts/fail)
+- [ ] build & push imagen  
+- [ ] audit + Trivy (artifacts/fail)  
 
 ### 9. Documentación
 
-- [ ] README con pasos y links a `/reports`
+- [ ] README con pasos y links a `/reports`  
 
 > **Criterios de aceptación**: cada ítem indica evidencia (comando, reporte o manifest) para reproducibilidad.
 
