@@ -20,12 +20,18 @@ help: ## Muestra esta ayuda con la lista de comandos disponibles
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
 # -------- Variables --------
-IMAGE_VERSION ?= $(shell date +"%Y.%m.%d.%H.%M")
+# Cargar variables desde .env si existe
+ifneq ("$(wildcard .env)","")
+  include .env
+  export
+endif
+
+# Si alguna variable no está definida, asignar valores por defecto
+IMAGE_VERSION ?= auto
 APP_VERSION   ?= 1.0.0
 
 ifeq ($(IMAGE_VERSION),auto)
 IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
-IMAGE_VERSION_CURRENT := $(IMAGE_VERSION)
 endif
 
 IMAGE         ?= traveltrack-api
@@ -37,7 +43,7 @@ DEPLOY_DIR    := deploy
 RENDER_FILE   := $(DEPLOY_DIR)/tt.yaml
 VALUES_FILE   := $(CHART_DIR)/values.yaml
 
-HELM_IMG      ?= alpine/helm:3.15.3
+HELM_IMG      ?= alpine/helm:3.19.0
 
 # -------- Buildx / Multi-arch --------
 PLATFORMS     ?= linux/amd64,linux/arm64
@@ -48,6 +54,12 @@ MULTIARCH    ?= true
 GH_USER       ?= 
 GHCR_REG      ?= ghcr.io
 GHCR_IMAGE    := $(GHCR_REG)/$(GH_USER)/$(IMAGE)
+
+# Si IMAGE_VERSION=auto → generar timestamp y persistir en .env
+ifeq ($(IMAGE_VERSION),auto)
+  IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
+  $(shell sed -i'' -E 's/^IMAGE_VERSION=.*/IMAGE_VERSION=$(IMAGE_VERSION)/' .env 2>/dev/null || echo "IMAGE_VERSION=$(IMAGE_VERSION)" >> .env)
+endif
 
 .PHONY: _ensure-dirs
 _ensure-dirs:
@@ -180,8 +192,8 @@ render: _ensure-dirs use-host-docker ## Renderiza chart Helm
 	docker run --rm -v "$$PWD":/work -w /work \
 	  $(HELM_IMG) template $(RELEASE) ./$(CHART_DIR) \
 	  -n $(NAMESPACE) \
-	  --set config.appVersion=$(APP_VERSION) \	  
 	  --values ./$(VALUES_FILE) \
+	  --set-string config.APP_VERSION=$(APP_VERSION) \
 	  > $(RENDER_FILE)
 	@echo "[OK] Render listo: $(RENDER_FILE)"
 
@@ -202,12 +214,12 @@ delete-ns: ## Elimina el namespace configurado
 .PHONY: port-forward smoke
 port-forward: ## Hace port-forward del Deployment
 	@echo "[FORWARD] Port-forward (Ctrl+C para detener)"
-	kubectl -n $(NAMESPACE) port-forward deploy/$(RELEASE)-traveltrack-api 8080:8080
+	kubectl -n $(NAMESPACE) port-forward svc/traveltrack-api 8080:8080
 
 smoke: ## Pruebas rápidas de la aplicación
 	@echo "[TEST] Pruebas rápidas"
 	@kubectl -n $(NAMESPACE) get deploy,po,svc
-	@kubectl -n $(NAMESPACE) port-forward deploy/$(RELEASE)-traveltrack-api 8080:8080 >/dev/null 2>&1 & \
+	@kubectl -n $(NAMESPACE) port-forward svc/traveltrack-api 8080:8080 >/dev/null 2>&1 & \
 	PID=$$!; \
 	sleep 2; \
 	echo "# /health"; curl -s localhost:8080/health || true; echo; \
@@ -243,3 +255,26 @@ buildx-push: buildx-create ghcr-login ## Construye y publica imagen multi-arch (
 print-version: ## Muestra la versión actual de la imagen y de la aplicación
 	@echo "IMAGE_VERSION = $(IMAGE_VERSION)"
 	@echo "APP_VERSION   = $(APP_VERSION)"
+
+# Detectar si IMAGE_VERSION vino por CLI (no hacer bump en ese caso)
+ifeq ($(origin IMAGE_VERSION), command line)
+  SKIP_BUMP := 1
+endif
+
+# Bump de versión (YYYY.MM.DD.HH.MM) y persistencia en .env
+.PHONY: bump-image-version
+bump-image-version:
+ifndef SKIP_BUMP
+	@echo "[VERSION] Generando nuevo IMAGE_VERSION…"
+	@ts=$$(date +"%Y.%m.%d.%H.%M"); \
+	  if [ -f .env ] && grep -q '^IMAGE_VERSION=' .env; then \
+	    sed -i'' -E "s/^IMAGE_VERSION=.*/IMAGE_VERSION=$$ts/" .env; \
+	  else \
+	    echo "IMAGE_VERSION=$$ts" >> .env; \
+	  fi; \
+	  echo "[VERSION] IMAGE_VERSION=$$ts"
+	# Refrescar variable dentro de make
+	$(eval IMAGE_VERSION := $(shell grep '^IMAGE_VERSION=' .env | cut -d= -f2))
+else
+	@echo "[VERSION] Usando IMAGE_VERSION pasado por CLI: $(IMAGE_VERSION)"
+endif

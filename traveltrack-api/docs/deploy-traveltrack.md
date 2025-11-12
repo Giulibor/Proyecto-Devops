@@ -67,45 +67,43 @@ Debe mostrar al menos las variantes `linux/amd64` y `linux/arm64`.
 
 ## 4) Despliegue en Kubernetes (YAML plano)
 
-### 4.1 Aplicar y verificar
+### 4.0 Iniciar Minikube
 
-```bash
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-
-kubectl -n traveltrack get all
+``` bash
+make start-minikube
 ```
 
-- `namespace.yaml`: crea el namespace dedicado.
-    
-- `configmap.yaml`: define variables `APP_VERSION` y `PORT`.
-    
-- `deployment.yaml`: despliega la imagen publicada en GHCR.
-    
-- `service.yaml`: expone el servicio interno tipo `ClusterIP`.
-    
-
----
-
-### 4.2 port-forward
+### 4.1 render
 
 ```bash
-kubectl -n traveltrack port-forward svc/traveltrack-api 8080:8080
+make render
 ```
 
 
+### 4.2 aplicar
+
+```bash
+make apply
+```
+
 ---
 
-## 5) Test final (local o cluster)
+### 4.3 port-forward
+
+``` bash
+make port-forward
+```
+
+---
+
+## 5) Test
 
 Verificar que la aplicación responde correctamente:
 
 ```bash
-curl -s http://localhost:8080/health
-curl -s http://localhost:8080/api/version
+make smoke
 ```
+
 
 - `/health`: debe devolver un estado OK.
     
