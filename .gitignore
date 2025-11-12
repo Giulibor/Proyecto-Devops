@@ -36,10 +36,18 @@
 */.vscode/
 */.idea/
 */.DS_Store
+.DS_Store
 */Thumbs.db
+.vscode/
+.cache
 
 # Terraform
 infra/terraform/.terraform
 infra/terraform/.terraform.lock.hcl
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.backup
+
+# Traveltrack specific
+traveltrack-api/reports/
+traveltrack-api/coverage/
+traveltrack-api/deploy/*.yaml
