@@ -52,12 +52,12 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 ### 3. Helm
 
-- [ ] Estructura `charts/traveltrack-api/`  
-- [ ] Templates (`deployment.yaml`, `service.yaml`, `configmap.yaml`)  
-- [ ] `values.yaml` parametrizado  
-- [ ] Render con `make render`  
-- [ ] Apply con `make apply`  
-- [ ] Smoke test con `make smoke`  
+- [x] Estructura `charts/traveltrack-api/`  
+- [x] Templates (`deployment.yaml`, `service.yaml`, `configmap.yaml`)  
+- [x] `values.yaml` parametrizado  
+- [x] Render con `make render`  
+- [x] Apply con `make apply`  
+- [x] Smoke test con `make smoke`  
 
 ### 4. Kyverno (políticas)
 
