@@ -1,7 +1,7 @@
-# Guía de Deploy — TravelTrack API (Build + GHCR + Docker)
+# Guía de Deploy — TravelTrack API (Build + GHCR + Docker + K8s plano)
 
-Esta guía describe el flujo estándar para **construir, publicar y probar la imagen de la API TravelTrack**, sin usar Kubernetes ni Helm.  
-El proceso está completamente automatizado mediante el `Makefile`.
+Esta guía describe el flujo estándar para **construir, publicar y probar la imagen de la API TravelTrack**, primero con Docker y luego desplegarla en **Kubernetes** sin usar Helm.  
+El proceso está automatizado mediante el `Makefile` y manifiestos YAML.
 
 ---
 
@@ -48,7 +48,7 @@ Este comando:
     
 - Compila para múltiples arquitecturas (`linux/amd64`, `linux/arm64`).
     
-- Sube la imagen a `ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION.
+- Sube la imagen a `ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION`.
     
 
 ---
@@ -65,37 +65,40 @@ Debe mostrar al menos las variantes `linux/amd64` y `linux/arm64`.
 
 ---
 
-## 4) Descargar y ejecutar la imagen publicada
+## 4) Despliegue en Kubernetes (YAML plano)
 
-### 4.1 Pull explícito del tag publicado
-
-```bash
-docker pull ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION_CURRENT
-```
-
-Esto descarga la imagen publicada desde GHCR para la arquitectura correspondiente a tu host.
-
----
-
-### 4.2 Ejecutar el contenedor en el puerto 8080
+### 4.1 Aplicar y verificar
 
 ```bash
-docker run --rm --name traveltrack-api \
-  -e APP_VERSION=${APP_VERSION:-1.0.0} \
-  -p 8080:8080 \
-  ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION_CURRENT
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+
+kubectl -n traveltrack get all
 ```
 
-- `--rm`: elimina el contenedor al detenerlo.
+- `namespace.yaml`: crea el namespace dedicado.
     
-- `-e APP_VERSION`: expone la versión de la aplicación.
+- `configmap.yaml`: define variables `APP_VERSION` y `PORT`.
     
-- `-p 8080:8080`: mapea el puerto local 8080 al contenedor.
+- `deployment.yaml`: despliega la imagen publicada en GHCR.
+    
+- `service.yaml`: expone el servicio interno tipo `ClusterIP`.
     
 
 ---
 
-## 5) Test
+### 4.2 port-forward
+
+```bash
+kubectl -n traveltrack port-forward svc/traveltrack-api 8080:8080
+```
+
+
+---
+
+## 5) Test final (local o cluster)
 
 Verificar que la aplicación responde correctamente:
 
@@ -107,9 +110,21 @@ curl -s http://localhost:8080/api/version
 - `/health`: debe devolver un estado OK.
     
 - `/api/version`: debe reflejar la versión actual (`APP_VERSION` o `IMAGE_VERSION`).
-    
+
+Si las respuestas son correctas, la aplicación está corriendo dentro del cluster.
 
 ---
+### 6. Limpieza del entorno
 
-**Resultado esperado:**  
-El contenedor se levanta correctamente, expone los endpoints esperados y confirma que la imagen multi-arquitectura publicada en GHCR funciona sin dependencias externas.
+#### 6.1 Borrar el namespace de travletrack
+
+```bash
+kubectl delete namespace traveltrack
+```
+
+#### 6.2 Apagar minikube
+
+```bash
+make stop-minikube
+```
+
