@@ -112,17 +112,42 @@ make smoke
 Si las respuestas son correctas, la aplicación está corriendo dentro del cluster.
 
 ---
-### 6. Limpieza del entorno
+## 6) Kyverno - Instalación y validación
 
-#### 6.1 Borrar el namespace de travletrack
+```bash
+make kyverno-install-kubectl
+make kyverno-apply
+
+(reset)
+make kyverno-reset
+
+(opcional)
+make kyverno-test-bad
+make kyverno-test-good
+(clean)
+make kyverno-clean
+
+(uninstall)
+make kyverno-uninstall
+```
+
+El reporte queda en `traveltrack-api/reports/kyverno.log`
+
+---
+### 7. Limpieza del entorno
+
+#### 7.1 Borrar el namespace de travletrack
 
 ```bash
 kubectl delete namespace traveltrack
 ```
 
-#### 6.2 Apagar minikube
+#### 7.2 Apagar minikube
 
 ```bash
 make stop-minikube
 ```
+
+
+---
 

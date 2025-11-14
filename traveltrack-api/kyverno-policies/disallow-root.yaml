@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-root
+spec:
+  validationFailureAction: enforce
+  rules:
+    - name: must-run-as-non-root
+      match:
+        resources:
+          kinds: ["Pod"]
+          namespaces:
+            - traveltrack
+          selector:
+            matchLabels:
+              app: traveltrack-api
+      validate:
+        message: "Los contenedores no deben ejecutarse como root."
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - securityContext:
+                  runAsNonRoot: true

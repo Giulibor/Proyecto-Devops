@@ -55,6 +55,10 @@ GH_USER       ?=
 GHCR_REG      ?= ghcr.io
 GHCR_IMAGE    := $(GHCR_REG)/$(GH_USER)/$(IMAGE)
 
+# -------- Kyverno --------
+KYVERNO_NS ?= kyverno
+KYVERNO_LOG := reports/kyverno.log
+
 # Si IMAGE_VERSION=auto → generar timestamp y persistir en .env
 ifeq ($(IMAGE_VERSION),auto)
   IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
@@ -278,3 +282,54 @@ ifndef SKIP_BUMP
 else
 	@echo "[VERSION] Usando IMAGE_VERSION pasado por CLI: $(IMAGE_VERSION)"
 endif
+
+# -------- Kyverno install --------
+.PHONY: kyverno-install-kubectl
+kyverno-install-kubectl: ## Instala Kyverno en el cluster vía kubectl
+	@echo "[INSTALL] Instalando Kyverno en el cluster (namespace: $(KYVERNO_NS))"
+	kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.11.1/install.yaml
+	kubectl -n $(KYVERNO_NS) get deploy,po
+
+kyverno-uninstall: ## Borra completamente Kyverno del cluster (usa con cuidado)
+	@echo "[KYVERNO] Eliminando namespace kyverno..."
+	- kubectl delete ns kyverno --ignore-not-found=true
+	@echo "[KYVERNO] Kyverno eliminado. Recordá reinstalar con make kyverno-install-kubectl."
+
+# -------- Kyverno policies testing --------
+.PHONY: kyverno-apply kyverno-test-bad kyverno-test-good kyverno-clean kyverno-reset
+
+kyverno-apply: ## Aplica políticas y lista cpol
+	@mkdir -p reports
+	kubectl apply -f kyverno-policies/ | tee -a $(KYVERNO_LOG)
+	kubectl get cpol | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-test-bad: ## Intenta deploy no conforme y guarda evidencia en kyverno.log
+	@mkdir -p reports
+	@echo "[TEST BAD] Intentando aplicar tests/bad-pod.yaml" | tee -a $(KYVERNO_LOG)
+	- kubectl apply -f tests/bad-pod.yaml -n $(NAMESPACE) >> $(KYVERNO_LOG) 2>&1 || true
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-test-good: ## Deploy conforme y registrar evidencia en kyverno.log
+	@mkdir -p reports
+	@echo "[TEST GOOD] Aplicando tests/good-pod.yaml" | tee -a $(KYVERNO_LOG)
+	kubectl delete pod good-pod -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	kubectl apply -f tests/good-pod.yaml -n $(NAMESPACE) | tee -a $(KYVERNO_LOG)
+	kubectl -n $(NAMESPACE) get pod good-pod -o wide | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-clean: ## Limpia pods de prueba
+	- kubectl delete -f tests/bad-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	- kubectl delete -f tests/good-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	@echo "[CLEAN] Pods de prueba eliminados" | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-reset: ## Borra todas las ClusterPolicy y reaplica desde policies/
+	@mkdir -p reports
+	@echo "[RESET] Eliminando todas las ClusterPolicy" | tee -a $(KYVERNO_LOG)
+	- kubectl get cpol -o name | xargs -r kubectl delete >> $(KYVERNO_LOG) 2>&1
+	@echo "[RESET] Reaplicando policies desde ./kyverno-policies/" | tee -a $(KYVERNO_LOG)
+	kubectl apply -f kyverno-policies/ | tee -a $(KYVERNO_LOG)
+	kubectl get cpol | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
