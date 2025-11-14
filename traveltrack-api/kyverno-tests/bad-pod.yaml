@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod
+  namespace: traveltrack
+spec:
+  containers:
+    - name: c
+      image: nginx:latest
+      # sin resources y sin runAsNonRoot → debe ser rechazado
