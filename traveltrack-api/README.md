@@ -61,16 +61,16 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 ### 4. Kyverno (políticas)
 
-- [ ] No `:latest`  
-- [ ] Resources obligatorios  
-- [ ] runAsNonRoot  
-- [ ] Test de rechazo  
+- [x] No `:latest`  
+- [x] Resources obligatorios  
+- [x] runAsNonRoot  
+- [x] Test de rechazo  
 
-### 5. Escaneos / reports
+### 5. Escaneo de Dependencias e Imágenes
 
-- [ ] npm audit → `reports/npm-audit.txt`  
-- [ ] Trivy → `reports/trivy-report.txt`  
-- [ ] SlimToolkit/Dive → `reports/image-analysis.md`  
+- [x] npm audit → Seguridad de dependencias
+- [x] Trivy → Vulnerabilidades en la imagen
+- [ ] SlimToolkit/Dive → Composición y optimización de capas
 
 ### 6. KubeLinter
 

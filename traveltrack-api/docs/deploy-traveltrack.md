@@ -1,7 +1,6 @@
-# Guía de Deploy — TravelTrack API (Build + GHCR + Docker + K8s plano)
+# Guía de Deploy — TravelTrack API
 
-Esta guía describe el flujo estándar para **construir, publicar y probar la imagen de la API TravelTrack**, primero con Docker y luego desplegarla en **Kubernetes** sin usar Helm.  
-El proceso está automatizado mediante el `Makefile` y manifiestos YAML.
+Esta guía describe el flujo estándar para **construir, publicar y probar la imagen de la API TravelTrack**.
 
 ---
 
@@ -14,7 +13,7 @@ make print-version
 ```
 
 ---
-
+# Etapa 1
 ## 1) Preparación
 
 Cargar credenciales y validar el acceso a GitHub Container Registry (GHCR):
@@ -64,8 +63,8 @@ make imagetools-inspect
 Debe mostrar al menos las variantes `linux/amd64` y `linux/arm64`.
 
 ---
-
-## 4) Despliegue en Kubernetes (YAML plano)
+# Etapa 2+3
+## 4) Despliegue en Kubernetes con Helm
 
 ### 4.0 Iniciar Minikube
 
@@ -74,6 +73,7 @@ make start-minikube
 ```
 
 ### 4.1 render
+Renderiza chart Helm
 
 ```bash
 make render
@@ -81,6 +81,7 @@ make render
 
 
 ### 4.2 aplicar
+Aplica la configuración en Kubernetes
 
 ```bash
 make apply
@@ -112,6 +113,7 @@ make smoke
 Si las respuestas son correctas, la aplicación está corriendo dentro del cluster.
 
 ---
+# Etapa 4
 ## 6) Kyverno - Instalación y validación
 
 ```bash
@@ -134,7 +136,61 @@ make kyverno-uninstall
 El reporte queda en `traveltrack-api/reports/kyverno.log`
 
 ---
-### 7. Limpieza del entorno
+
+# Etapa 5
+
+## a) npm audit → Seguridad de dependencias
+
+0) confirmar que las dependiencias ya estan instaladas
+```bash
+cd traveltrack-api
+npm install
+
+```
+
+1) ejecutar análisis
+```bash
+npm audit --json > reports/npm-audit.txt
+
+```
+
+2) validacion
+```bash
+less reports/npm-audit.txt
+```
+o
+```bash
+cat reports/npm-audit.txt | jq '.'
+```
+
+
+## b) Trivy → Vulnerabilidades en la imagen
+
+
+1) correr Trivy desde docker
+```bash
+docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $PWD:/work \
+  -w /work \
+  aquasec/trivy:latest \
+  image ghcr.io/cardo88/traveltrack-api:$IMAGE_VERSION \
+  --format json > reports/trivy-report.json
+```
+
+2) validar reporte, filtrado por high o critical, y solo con campos interesantes
+```bash
+jq '.Results[].Vulnerabilities // [] 
+    | .[] 
+    | select(.Severity=="HIGH" or .Severity=="CRITICAL") 
+    | {id: .VulnerabilityID, pkg: .PkgName, severity: .Severity, installed: .InstalledVersion, fixed: .FixedVersion}' \
+    reports/trivy-report.json
+```
+
+
+
+---
+# Limpieza del entorno
 
 #### 7.1 Borrar el namespace de travletrack
 
@@ -147,7 +203,4 @@ kubectl delete namespace traveltrack
 ```bash
 make stop-minikube
 ```
-
-
----
 
