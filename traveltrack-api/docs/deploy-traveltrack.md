@@ -188,6 +188,38 @@ jq '.Results[].Vulnerabilities // []
 ```
 
 
+## c) SlimToolkit/Dive → Composición y optimización de capas
+
+```bash
+eval $(minikube -p minikube docker-env -u)
+```
+
+```bash
+docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$PWD":/work \
+  -w /work \
+  dslim/docker-slim:latest \
+  xray --pull \
+       --target ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
+```
+
+probando con Dive
+```bash
+docker pull ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
+docker image ls ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
+```
+
+```bash
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  wagoodman/dive:latest \
+  ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
+```
+
+
+---
+# Etapa 6
 
 ---
 # Limpieza del entorno
