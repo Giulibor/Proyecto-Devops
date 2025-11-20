@@ -1,0 +1,32 @@
+replicaCount: 1
+
+image:
+  repository: snake-app        # nombre de la imagen local/registry
+  tag: "1.0.1"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80          # puerto del Service en el cluster
+  targetPort: 8080  # puerto del contenedor (el de nginx unprivileged)
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: snakeapp.localtest.me
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+config:
+  APP_ENV: "dev"
+  API_BASE_URL: "http://example.com/api"

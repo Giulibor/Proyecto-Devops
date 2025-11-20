@@ -1,0 +1,28 @@
+.panel {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #222;
+  color: #eee;
+  cursor: pointer;
+}
+.controls button:disabled { opacity: .6; cursor: not-allowed; }
+.controls .stat { margin-left: 8px; font-weight: 600; }
+.game-canvas {
+  border: 2px solid #444;
+  border-radius: 8px;
+  background: #111;
+  image-rendering: pixelated;
+}
+.hint { color: #999; font-size: 12px; }

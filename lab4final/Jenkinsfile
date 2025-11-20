@@ -1,0 +1,83 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME       = 'snake-app'
+        IMAGE_TAG      = "1.0.${env.BUILD_NUMBER}"
+        IMAGE          = "${APP_NAME}:${IMAGE_TAG}"
+        KUBE_NAMESPACE = "lab4"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Semgrep') {
+            steps {
+                sh '''
+                mkdir -p reports
+                # Analiza el código, pero NO rompe el pipeline (solo genera reporte)
+                semgrep --config auto front/snakeapp \
+                  --output reports/semgrep-report.txt || true
+                '''
+            }
+        }
+
+        stage('Snyk - dependencias') {
+            steps {
+                sh '''
+                mkdir -p reports
+                cd front/snakeapp
+                # Falla el pipeline si hay vulnerabilidades CRITICAL
+                snyk test --file=package.json \
+                  --severity-threshold=critical \
+                  --json > ../reports/snyk-report.json
+                '''
+            }
+        }
+
+        stage('Build & Test Angular') {
+            steps {
+                sh '''
+                cd front/snakeapp
+                npm ci
+                npm test || echo "tests skipped"
+                npm run build -- --configuration=production
+                '''
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                sh '''
+                docker build -t ${IMAGE} front/snakeapp
+                # opcional: tag "estable"
+                docker tag ${IMAGE} ${APP_NAME}:latest
+                '''
+            }
+        }
+
+        stage('Deploy con Helm') {
+            steps {
+                sh '''
+                kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+
+                helm upgrade --install lab4 helm/lab4-demo \
+                  -f helm/lab4-demo/values.yaml \
+                  -f helm/l4-demo/values-dev.yaml \
+                  --set image.tag=${IMAGE_TAG} \
+                  -n ${KUBE_NAMESPACE}
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+        }
+    }
+}

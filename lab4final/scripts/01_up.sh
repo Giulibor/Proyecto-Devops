@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+# ----- Vars -----
+APP_NAMESPACE="${APP_NAMESPACE:-lab4}"
+eval "$(minikube docker-env)"
+
+minikube addons enable ingress
+
+# ----- Namespaces base -----
+echo "[+] Crear namespace ${APP_NAMESPACE}"
+kubectl get ns "$APP_NAMESPACE" >/dev/null 2>&1 || kubectl create ns "$APP_NAMESPACE"
+
+echo "[+] Build de imagen Angular (snake-app:1.0.1)"
+docker build -t snake-app:1.0.1 ../front/snakeapp
+
+echo "[+] Deploy/upgrade con Helm en namespace ${APP_NAMESPACE}"
+helm upgrade --install lab4 ../helm/lab4-demo \
+  -f ../helm/lab4-demo/values.yaml \
+  -f ../helm/lab4-demo/values-dev.yaml \
+  -n "$APP_NAMESPACE"
+
+echo "[i] Verifico que los pods inicien correctamente y que el servicio sea 
+accesible (sleep 5)"
+sleep 5
+kubectl get pods -n lab4
+kubectl get svc -n lab4
+kubectl get ingress -n lab4
+kubectl describe deployment lab4-lab4-demo -n lab4 | grep -i image
+
+echo "[+] Deploy Jenkins"
+sh ./03_jenkins.sh
