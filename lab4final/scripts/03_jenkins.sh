@@ -17,10 +17,23 @@ docker run -d --name jenkins-lab4 \
   -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false" \
   jenkins/jenkins:2.537-jdk21
 
+echo "[i] Instalando plugins de jenkins"
+docker exec jenkins-lab4 bash -c \
+  "jenkins-plugin-cli --plugins \
+  workflow-aggregator \
+  git \
+  git-client \
+  credentials \
+  credentials-binding \
+  scm-api \
+  plain-credentials \
+  junit"
+
+docker exec jenkins-lab4 bash -c \
+  "pip install semgrep ; npm install -g snyk"
+
+docker restart jenkins-lab4
+echo "[i] Listo, jenkins iniciado"
 echo "http://localhost:8081"
 echo "user: admin"
 echo "pass: admin123"
-
-docker exec jenkins-lab4 bash -c \
-  "jenkins-plugin-cli --plugins workflow-aggregator git pipeline-stage-view"
-
