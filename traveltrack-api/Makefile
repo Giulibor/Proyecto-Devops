@@ -17,7 +17,8 @@ SHELL := /bin/bash
 .PHONY: help
 help: ## Muestra esta ayuda con la lista de comandos disponibles
 	@echo "make <target>"
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@grep -hE '^[a-zA-Z0-9_-]+:.*## .*$$' $(MAKEFILE_LIST) | sort | \
+	  awk 'BEGIN {FS = ":.*## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
 # -------- Variables --------
 # Cargar variables desde .env si existe
@@ -88,12 +89,12 @@ status: ## Muestra estado de minikube y nodos
 # -------- Alternar Docker daemon --------
 .PHONY: use-minikube-docker use-host-docker which-docker doctor
 use-minikube-docker: ## Cambia Docker CLI al daemon de Minikube
-	@eval "$$(minikube docker-env)"; \
+	@eval "$$(minikube -p minikube docker-env)"; \
 	echo "[OK] Docker CLI apuntando al daemon de Minikube."; \
 	docker info | grep -i 'name' || true
 
 use-host-docker: ## Restaura Docker CLI del host
-	@eval "$$(minikube docker-env -u)"; \
+	@eval "$$(minikube -p minikube docker-env -u)"; \
 	echo "[OK] Docker CLI de tu host restaurado."; \
 	docker info | grep -i 'name' || true
 

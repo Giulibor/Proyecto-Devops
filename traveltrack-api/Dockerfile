@@ -22,6 +22,11 @@ COPY --from=build --chown=10001:10001 /app/node_modules ./node_modules
 COPY --from=build --chown=10001:10001 /app/dist         ./dist
 COPY --chown=10001:10001 package.json                   ./package.json
 
+# Eliminar npm/npx del runtime para reducir superficie de ataque
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx
+
 # Ejecutar como usuario no-root numérico
 USER 10001:10001
 
