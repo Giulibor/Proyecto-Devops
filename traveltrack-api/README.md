@@ -61,35 +61,32 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 ### 4. Kyverno (políticas)
 
-- [ ] No `:latest`  
-- [ ] Resources obligatorios  
-- [ ] runAsNonRoot  
-- [ ] Test de rechazo  
+- [x] No `:latest`  
+- [x] Resources obligatorios  
+- [x] runAsNonRoot  
+- [x] Test de rechazo  
 
-### 5. Escaneos / reports
+### 5. Escaneo de Dependencias e Imágenes
 
-- [ ] npm audit → `reports/npm-audit.txt`  
-- [ ] Trivy → `reports/trivy-report.txt`  
-- [ ] SlimToolkit/Dive → `reports/image-analysis.md`  
+- [x] npm audit → Seguridad de dependencias
+- [x] Trivy → Vulnerabilidades en la imagen
+- [x] SlimToolkit/Dive → Composición y optimización de capas
 
 ### 6. KubeLinter
 
-- [ ] `reports/kubelinter.txt`  
+- [x] Validación de manifiestos con KubeLinter
+- [x] Generar reporte en `reports/kubelinter.txt`
 
 ### 7. Falco (runtime)
 
-- [ ] Instalar y generar alerta → `reports/falco-event.log`  
+- [x] Instalar Falco en el cluster Minikube
+- [x] Generar una alerta controlada (evento sospechoso)
+- [x] Guardar evidencia en `reports/falco-event.log`
 
-### 8. CI (GitHub Actions)
+### 8. Documentación
 
-- [ ] build & push imagen  
-- [ ] audit + Trivy (artifacts/fail)  
-
-### 9. Documentación
-
-- [ ] README con pasos y links a `/reports`  
-
-> **Criterios de aceptación**: cada ítem indica evidencia (comando, reporte o manifest) para reproducibilidad.
+- [ ] README actualizado con roadmap y enlaces a `/reports`
+- [ ] Guías en `docs/` alineadas con el alcance del Entregable 3
 
 ---
 

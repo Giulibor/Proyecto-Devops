@@ -17,7 +17,8 @@ SHELL := /bin/bash
 .PHONY: help
 help: ## Muestra esta ayuda con la lista de comandos disponibles
 	@echo "make <target>"
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@grep -hE '^[a-zA-Z0-9_-]+:.*## .*$$' $(MAKEFILE_LIST) | sort | \
+	  awk 'BEGIN {FS = ":.*## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
 # -------- Variables --------
 # Cargar variables desde .env si existe
@@ -55,6 +56,10 @@ GH_USER       ?=
 GHCR_REG      ?= ghcr.io
 GHCR_IMAGE    := $(GHCR_REG)/$(GH_USER)/$(IMAGE)
 
+# -------- Kyverno --------
+KYVERNO_NS ?= kyverno
+KYVERNO_LOG := reports/kyverno.log
+
 # Si IMAGE_VERSION=auto → generar timestamp y persistir en .env
 ifeq ($(IMAGE_VERSION),auto)
   IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
@@ -84,12 +89,12 @@ status: ## Muestra estado de minikube y nodos
 # -------- Alternar Docker daemon --------
 .PHONY: use-minikube-docker use-host-docker which-docker doctor
 use-minikube-docker: ## Cambia Docker CLI al daemon de Minikube
-	@eval "$$(minikube docker-env)"; \
+	@eval "$$(minikube -p minikube docker-env)"; \
 	echo "[OK] Docker CLI apuntando al daemon de Minikube."; \
 	docker info | grep -i 'name' || true
 
 use-host-docker: ## Restaura Docker CLI del host
-	@eval "$$(minikube docker-env -u)"; \
+	@eval "$$(minikube -p minikube docker-env -u)"; \
 	echo "[OK] Docker CLI de tu host restaurado."; \
 	docker info | grep -i 'name' || true
 
@@ -278,3 +283,125 @@ ifndef SKIP_BUMP
 else
 	@echo "[VERSION] Usando IMAGE_VERSION pasado por CLI: $(IMAGE_VERSION)"
 endif
+
+# -------- Kyverno install --------
+.PHONY: kyverno-install-kubectl
+kyverno-install-kubectl: ## Instala Kyverno en el cluster vía kubectl
+	@echo "[INSTALL] Instalando Kyverno en el cluster (namespace: $(KYVERNO_NS))"
+	kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.11.1/install.yaml
+	kubectl -n $(KYVERNO_NS) get deploy,po
+
+kyverno-uninstall: ## Borra completamente Kyverno del cluster (usa con cuidado)
+	@echo "[KYVERNO] Eliminando namespace kyverno..."
+	- kubectl delete ns kyverno --ignore-not-found=true
+	@echo "[KYVERNO] Kyverno eliminado. Recordá reinstalar con make kyverno-install-kubectl."
+
+# -------- Kyverno policies testing --------
+.PHONY: kyverno-apply kyverno-test-bad kyverno-test-good kyverno-clean kyverno-reset
+
+kyverno-apply: ## Aplica políticas y lista cpol
+	@mkdir -p reports
+	kubectl apply -f kyverno-policies/ | tee -a $(KYVERNO_LOG)
+	kubectl get cpol | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-test-bad: ## Intenta deploy no conforme y guarda evidencia en kyverno.log
+	@mkdir -p reports
+	@echo "[TEST BAD] Intentando aplicar tests/bad-pod.yaml" | tee -a $(KYVERNO_LOG)
+	- kubectl apply -f tests/bad-pod.yaml -n $(NAMESPACE) >> $(KYVERNO_LOG) 2>&1 || true
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-test-good: ## Deploy conforme y registrar evidencia en kyverno.log
+	@mkdir -p reports
+	@echo "[TEST GOOD] Aplicando tests/good-pod.yaml" | tee -a $(KYVERNO_LOG)
+	kubectl delete pod good-pod -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	kubectl apply -f tests/good-pod.yaml -n $(NAMESPACE) | tee -a $(KYVERNO_LOG)
+	kubectl -n $(NAMESPACE) get pod good-pod -o wide | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-clean: ## Limpia pods de prueba
+	- kubectl delete -f tests/bad-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	- kubectl delete -f tests/good-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	@echo "[CLEAN] Pods de prueba eliminados" | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+kyverno-reset: ## Borra todas las ClusterPolicy y reaplica desde policies/
+	@mkdir -p reports
+	@echo "[RESET] Eliminando todas las ClusterPolicy" | tee -a $(KYVERNO_LOG)
+	- kubectl get cpol -o name | xargs -r kubectl delete >> $(KYVERNO_LOG) 2>&1
+	@echo "[RESET] Reaplicando policies desde ./kyverno-policies/" | tee -a $(KYVERNO_LOG)
+	kubectl apply -f kyverno-policies/ | tee -a $(KYVERNO_LOG)
+	kubectl get cpol | tee -a $(KYVERNO_LOG)
+	@echo "----" >> $(KYVERNO_LOG)
+
+# -------- KubeLinter scan --------
+.PHONY: kubelinter-scan
+kubelinter-scan: ## Ejecuta KubeLinter contra deploy/tt.yaml y genera reports/kubelinter.txt
+	@if [ ! -f deploy/tt.yaml ]; then \
+		echo "⚠️  Manifiesto no encontrado, ejecutando make render..."; \
+		$(MAKE) render; \
+	fi
+
+	mkdir -p reports
+
+	docker run --rm \
+		-v $(PWD):/work \
+		-w /work \
+		ghcr.io/stackrox/kube-linter:latest \
+		lint deploy/tt.yaml > reports/kubelinter.txt
+
+	@echo "✔ KubeLinter completado → reports/kubelinter.txt"
+
+# -------- Falco install and testing --------
+.PHONY: falco-install falco-trigger falco-logs falco-uninstall
+falco-install: ## Instala Falco en el cluster Minikube usando Helm (templating) + kubectl
+	@echo "📦 Instalando Falco..."
+	@kubectl create namespace falco --dry-run=client -o yaml | kubectl apply -f -
+	@mkdir -p deploy
+
+	docker run --rm \
+		-v $(PWD):/work \
+		-w /work \
+		--entrypoint sh \
+		$(HELM_IMG) -c "helm repo add falcosecurity https://falcosecurity.github.io/charts && \
+		                helm repo update && \
+		                helm template falco falcosecurity/falco \
+							--namespace falco \
+							--set driver.kind=modern-bpf \
+							> deploy/falco.yaml"
+
+	@echo "[APPLY] Aplicando manifiestos de Falco desde deploy/falco.yaml"
+	kubectl apply -n falco -f deploy/falco.yaml
+
+	@echo "✔ Falco instalado en namespace falco (vía helm template + kubectl apply)"
+
+falco-trigger: ## Genera un evento sospechoso ejecutando un shell dentro de un pod
+	@echo "⚠️  Generando un evento sospechoso..."
+	@POD=$$(kubectl get pods -n $(NAMESPACE) -o jsonpath='{.items[0].metadata.name}'); \
+	echo "Ejecutando: kubectl exec -it $$POD -- sh -c 'id; sleep 1'"; \
+	kubectl exec -it -n $(NAMESPACE) $$POD -- sh -c "id; sleep 1" || true
+	@echo "✔ Evento generado (shell interactiva corta dentro del contenedor)"
+
+falco-logs: ## Extrae logs de Falco a reports/falco-event.log
+	@echo "📝 Extrayendo logs de Falco..."
+	mkdir -p reports
+	@POD=$$(kubectl get pods -n falco -o jsonpath='{.items[0].metadata.name}'); \
+	if [ -z "$$POD" ]; then \
+	  echo "[ERROR] No se encontró ningún pod en el namespace falco"; \
+	  kubectl get pods -n falco; \
+	  exit 1; \
+	fi; \
+	echo "[INFO] Usando pod: $$POD"; \
+	kubectl logs -n falco $$POD > reports/falco-event.log
+	@echo "✔ Logs guardados en reports/falco-event.log"
+
+falco-uninstall:
+	@echo "🧹 Desinstalando Falco..."
+	docker run --rm \
+		-v $(PWD):/work \
+		-w /work \
+		--network host \
+		$(HELM_IMG) uninstall falco -n falco || true
+
+	kubectl delete namespace falco --ignore-not-found
+	@echo "✔ Falco desinstalado"
