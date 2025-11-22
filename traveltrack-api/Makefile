@@ -351,3 +351,57 @@ kubelinter-scan: ## Ejecuta KubeLinter contra deploy/tt.yaml y genera reports/ku
 		lint deploy/tt.yaml > reports/kubelinter.txt
 
 	@echo "✔ KubeLinter completado → reports/kubelinter.txt"
+
+# -------- Falco install and testing --------
+.PHONY: falco-install falco-trigger falco-logs falco-uninstall
+falco-install: ## Instala Falco en el cluster Minikube usando Helm (templating) + kubectl
+	@echo "📦 Instalando Falco..."
+	@kubectl create namespace falco --dry-run=client -o yaml | kubectl apply -f -
+	@mkdir -p deploy
+
+	docker run --rm \
+		-v $(PWD):/work \
+		-w /work \
+		--entrypoint sh \
+		$(HELM_IMG) -c "helm repo add falcosecurity https://falcosecurity.github.io/charts && \
+		                helm repo update && \
+		                helm template falco falcosecurity/falco \
+							--namespace falco \
+							--set driver.kind=modern-bpf \
+							> deploy/falco.yaml"
+
+	@echo "[APPLY] Aplicando manifiestos de Falco desde deploy/falco.yaml"
+	kubectl apply -n falco -f deploy/falco.yaml
+
+	@echo "✔ Falco instalado en namespace falco (vía helm template + kubectl apply)"
+
+falco-trigger: ## Genera un evento sospechoso ejecutando un shell dentro de un pod
+	@echo "⚠️  Generando un evento sospechoso..."
+	@POD=$$(kubectl get pods -n $(NAMESPACE) -o jsonpath='{.items[0].metadata.name}'); \
+	echo "Ejecutando: kubectl exec -it $$POD -- sh -c 'id; sleep 1'"; \
+	kubectl exec -it -n $(NAMESPACE) $$POD -- sh -c "id; sleep 1" || true
+	@echo "✔ Evento generado (shell interactiva corta dentro del contenedor)"
+
+falco-logs: ## Extrae logs de Falco a reports/falco-event.log
+	@echo "📝 Extrayendo logs de Falco..."
+	mkdir -p reports
+	@POD=$$(kubectl get pods -n falco -o jsonpath='{.items[0].metadata.name}'); \
+	if [ -z "$$POD" ]; then \
+	  echo "[ERROR] No se encontró ningún pod en el namespace falco"; \
+	  kubectl get pods -n falco; \
+	  exit 1; \
+	fi; \
+	echo "[INFO] Usando pod: $$POD"; \
+	kubectl logs -n falco $$POD > reports/falco-event.log
+	@echo "✔ Logs guardados en reports/falco-event.log"
+
+falco-uninstall:
+	@echo "🧹 Desinstalando Falco..."
+	docker run --rm \
+		-v $(PWD):/work \
+		-w /work \
+		--network host \
+		$(HELM_IMG) uninstall falco -n falco || true
+
+	kubectl delete namespace falco --ignore-not-found
+	@echo "✔ Falco desinstalado"
