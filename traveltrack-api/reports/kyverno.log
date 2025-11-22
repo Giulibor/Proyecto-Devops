@@ -1,0 +1,32 @@
+[RESET] Eliminando todas las ClusterPolicy
+clusterpolicy.kyverno.io "deny-latest-tag" deleted
+clusterpolicy.kyverno.io "disallow-root" deleted
+clusterpolicy.kyverno.io "require-resources" deleted
+[RESET] Reaplicando policies desde ./kyverno-policies/
+----
+[RESET] Eliminando todas las ClusterPolicy
+[RESET] Reaplicando policies desde ./kyverno-policies/
+clusterpolicy.kyverno.io/deny-latest-tag created
+clusterpolicy.kyverno.io/disallow-root created
+clusterpolicy.kyverno.io/require-resources created
+NAME                ADMISSION   BACKGROUND   VALIDATE ACTION   READY   AGE   MESSAGE
+deny-latest-tag     true        true         enforce           True    0s    Ready
+disallow-root       true        true         enforce           True    0s    Ready
+require-resources   true        true         enforce           True    0s    Ready
+----
+clusterpolicy.kyverno.io/deny-latest-tag unchanged
+clusterpolicy.kyverno.io/disallow-root unchanged
+clusterpolicy.kyverno.io/require-resources unchanged
+NAME                ADMISSION   BACKGROUND   VALIDATE ACTION   READY   AGE   MESSAGE
+deny-latest-tag     true        true         enforce           True    11s   Ready
+disallow-root       true        true         enforce           True    11s   Ready
+require-resources   true        true         enforce           True    11s   Ready
+----
+clusterpolicy.kyverno.io/deny-latest-tag unchanged
+clusterpolicy.kyverno.io/disallow-root unchanged
+clusterpolicy.kyverno.io/require-resources unchanged
+NAME                ADMISSION   BACKGROUND   VALIDATE ACTION   READY   AGE     MESSAGE
+deny-latest-tag     true        true         enforce           True    4d23h   Ready
+disallow-root       true        true         enforce           True    4d23h   Ready
+require-resources   true        true         enforce           True    4d23h   Ready
+----
