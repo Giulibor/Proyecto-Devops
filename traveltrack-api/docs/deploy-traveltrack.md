@@ -75,6 +75,8 @@ make start-minikube
 ### 4.1 render
 Renderiza chart Helm
 
+eval $(minikube docker-env -u)
+
 ```bash
 make render
 ```
@@ -236,3 +238,15 @@ kubectl delete namespace traveltrack
 make stop-minikube
 ```
 
+
+
+# arreglar:
+- [ ] que no se gernere una nueva version cada vez, sino qeu se genere solo cuando se pushea, luego conserve esa version en algun lugar (.log tal vez)
+- [ ] arreglar el tema de cuando usar docker para docker y cuando para minikube
+- [ ] cada vez que hago algo con -rm, no esta matando ese docker.
+
+
+ayuda memoria
+
+eval $(minikube docker-env)
+eval $(minikube docker-env -u)

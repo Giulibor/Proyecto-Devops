@@ -70,26 +70,23 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 - [x] npm audit → Seguridad de dependencias
 - [x] Trivy → Vulnerabilidades en la imagen
-- [ ] SlimToolkit/Dive → Composición y optimización de capas
+- [x] SlimToolkit/Dive → Composición y optimización de capas
 
 ### 6. KubeLinter
 
-- [ ] `reports/kubelinter.txt`  
+- [ ] Validación de manifiestos con KubeLinter
+- [ ] Generar reporte en `reports/kubelinter.txt`
 
 ### 7. Falco (runtime)
 
-- [ ] Instalar y generar alerta → `reports/falco-event.log`  
+- [ ] Instalar Falco en el cluster Minikube
+- [ ] Generar una alerta controlada (evento sospechoso)
+- [ ] Guardar evidencia en `reports/falco-event.log`
 
-### 8. CI (GitHub Actions)
+### 8. Documentación
 
-- [ ] build & push imagen  
-- [ ] audit + Trivy (artifacts/fail)  
-
-### 9. Documentación
-
-- [ ] README con pasos y links a `/reports`  
-
-> **Criterios de aceptación**: cada ítem indica evidencia (comando, reporte o manifest) para reproducibilidad.
+- [ ] README actualizado con roadmap y enlaces a `/reports`
+- [ ] Guías en `docs/` alineadas con el alcance del Entregable 3
 
 ---
 
