@@ -334,3 +334,20 @@ kyverno-reset: ## Borra todas las ClusterPolicy y reaplica desde policies/
 	kubectl get cpol | tee -a $(KYVERNO_LOG)
 	@echo "----" >> $(KYVERNO_LOG)
 
+# -------- KubeLinter scan --------
+.PHONY: kubelinter-scan
+kubelinter-scan: ## Ejecuta KubeLinter contra deploy/tt.yaml y genera reports/kubelinter.txt
+	@if [ ! -f deploy/tt.yaml ]; then \
+		echo "⚠️  Manifiesto no encontrado, ejecutando make render..."; \
+		$(MAKE) render; \
+	fi
+
+	mkdir -p reports
+
+	docker run --rm \
+		-v $(PWD):/work \
+		-w /work \
+		ghcr.io/stackrox/kube-linter:latest \
+		lint deploy/tt.yaml > reports/kubelinter.txt
+
+	@echo "✔ KubeLinter completado → reports/kubelinter.txt"
