@@ -5,7 +5,21 @@ set -e
 APP_NAMESPACE="${APP_NAMESPACE:-lab4}"
 eval "$(minikube docker-env)"
 
-minikube addons enable ingress
+echo "[+] Limpiando posible ingress-nginx viejo del addon de minikube"
+minikube addons disable ingress || true
+
+kubectl delete ns ingress-nginx --ignore-not-found
+kubectl delete clusterrole ingress-nginx --ignore-not-found
+kubectl delete clusterrolebinding ingress-nginx --ignore-not-found
+kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found
+
+echo "[+] Instalando ingress-nginx via Helm (requerido para Admission Webhook)"
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace
 
 # ----- Namespaces base -----
 echo "[+] Crear namespace ${APP_NAMESPACE}"
