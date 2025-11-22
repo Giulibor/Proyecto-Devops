@@ -223,6 +223,21 @@ docker run --rm -it \
 ---
 # Etapa 6
 
+> docker apuntando a docker
+
+## Ejecutar la validación
+
+Una vez agregado el target:
+```
+make kubelinter-scan
+```
+
+Esto generará:
+
+`reports/kubelinter.txt`
+
+Ese archivo será referencia directa en la entrega.
+
 ---
 # Limpieza del entorno
 

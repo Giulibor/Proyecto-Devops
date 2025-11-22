@@ -74,8 +74,8 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 ### 6. KubeLinter
 
-- [ ] Validación de manifiestos con KubeLinter
-- [ ] Generar reporte en `reports/kubelinter.txt`
+- [x] Validación de manifiestos con KubeLinter
+- [x] Generar reporte en `reports/kubelinter.txt`
 
 ### 7. Falco (runtime)
 
