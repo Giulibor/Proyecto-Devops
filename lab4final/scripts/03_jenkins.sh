@@ -13,6 +13,7 @@ docker run -d --name jenkins-lab4 \
   -p 50000:50000 \
   -v jenkins_home_lab4:/var/jenkins_home \
   -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.minikube:$HOME/.minikube:ro" \
   -v "$HOME/.kube:/var/jenkins_home/.kube:ro" \
   -v "$PWD/../jenkins/init_admin.groovy":/var/jenkins_home/init.groovy.d/init_admin.groovy:ro \
   -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false" \
@@ -44,6 +45,21 @@ docker exec -u 0 jenkins-lab4 bash -c \
    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
    apt-get install -y nodejs && \
    npm install -g snyk"
+
+
+echo "[i] Instalando Docker CLI, kubectl y Helm (como root)"
+docker exec -u 0 jenkins-lab4 bash -c '
+  set -e
+  # Docker CLI
+  apt-get install -y docker.io
+
+  # kubectl
+  curl -L https://dl.k8s.io/release/v1.34.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+  chmod +x /usr/local/bin/kubectl
+
+  # Helm
+  curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+'
 
 echo "[i] Reiniciando el contenedor"
 docker restart jenkins-lab4

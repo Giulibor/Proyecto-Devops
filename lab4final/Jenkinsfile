@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_NAME       = 'snake-app'
-        IMAGE_TAG      = "1.0.${env.BUILD_NUMBER}"
+        IMAGE_TAG      = "1.0.3"
         IMAGE          = "${APP_NAME}:${IMAGE_TAG}"
         KUBE_NAMESPACE = "lab4"
     }
@@ -65,7 +65,6 @@ pipeline {
             steps {
                 sh '''
                 kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-
                 helm upgrade --install lab4 lab4final/helm/lab4-demo \
                   -f lab4final/helm/lab4-demo/values.yaml \
                   -f lab4final/helm/lab4-demo/values-dev.yaml \
