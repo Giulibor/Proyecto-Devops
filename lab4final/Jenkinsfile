@@ -30,15 +30,19 @@ pipeline {
 
         stage('Snyk - dependencias') {
             steps {
-                sh '''
-                mkdir -p reports
-                cd lab4final/front/snakeapp
-                snyk test --file=package.json \
-                --severity-threshold=critical \
-                --json > ../../reports/snyk-report.json
-                '''
+                withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                    sh '''
+                    mkdir -p reports
+                    cd lab4final/front/snakeapp
+                    snyk test \
+                    --file=package.json \
+                    --severity-threshold=critical \
+                    --json > ../../reports/snyk-report.json
+                    '''
+                }
             }
         }
+
 
 
         stage('Build & Test Angular') {
