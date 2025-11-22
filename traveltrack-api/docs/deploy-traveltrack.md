@@ -236,7 +236,56 @@ Esto generará:
 
 `reports/kubelinter.txt`
 
-Ese archivo será referencia directa en la entrega.
+
+---
+
+# Etapa 7 - Falco
+
+> Docker como minikube
+> Debe estar traveltrack corriendo
+
+1. Instalar Falco en Minikube
+	- Crea el namespace falco
+	- Agrega el repo Helm (dentro del contenedor helm)
+	- Instala Falco con los valores por defecto
+	- No instala nada en la compu
+2. Generar un evento sospechoso (por ejemplo, abrir un shell dentro de un pod)
+    - Entrar a un pod en modo shell (sh)
+	- Esto genera la regla “Terminal shell in container” o similar
+3. Extraer los logs a reports/falco-event.log
+    - Se capturan las últimas líneas del daemon de Falco.
+4. Desinstalar Falco para no dejarlo corriendo
+
+Comandos:
+``` bash
+make falco-install
+sleep 20
+kubectl get pods -n falco
+make falco-trigger
+sleep 5
+make falco-logs
+make falco-uninstall
+```
+
+Genera reporte en `reports/falco-event.log`
+
+> Para la parte de monitoreo en tiempo de ejecución se instaló Falco mediante Helm en el namespace falco, utilizando helm template y kubectl apply.
+> 
+> Luego se ejecutó un comando controlado (kubectl exec ... sh -c "id") dentro de un pod del namespace traveltrack para simular la apertura de un shell en un contenedor, que es una de las situaciones monitoreadas por las reglas por defecto de Falco.
+> 
+> Los logs del daemon de Falco se recopilaron en reports/falco-event.log. En ellos se observa que Falco inicia correctamente, carga su configuración y reglas (falco_rules.yaml), pero al intentar adjuntar los BPF programs a los tracepoints del kernel se registran errores de libbpf/libpman indicando que no encuentra los eventos de syscall esperados.
+> 
+> Esto se debe a limitaciones del entorno de ejecución (Minikube sobre macOS/Docker), donde el kernel de la VM no expone todos los tracepoints necesarios para el engine BPF de Falco. Como consecuencia, en este entorno no se llegan a registrar alertas de reglas, aunque el flujo de instalación, generación de evento sospechoso y recolección de evidencia está implementado y reproducible.
+
+### Limitaciones del entorno con Falco
+
+Falco se inicializa correctamente, carga su configuración y reglas, y arranca el engine modern-bpf. Sin embargo, en este entorno (Minikube sobre macOS/Docker Desktop) el kernel de la VM no expone todos los tracepoints necesarios para la instrumentación de syscalls. Esto genera mensajes de libbpf/libpman indicando que no se encuentran ciertos eventos (sys_enter_*), lo cual impide que algunas reglas disparen alertas.
+
+Este comportamiento es conocido en setups basados en LinuxKit/Docker Desktop, donde el kernel virtualizado presenta soporte BPF parcial. A pesar de ello:
+- El despliegue de Falco es reproducible
+- El evento sospechoso se genera correctamente
+- Los logs del daemon quedan almacenados como evidencia
+
 
 ---
 # Limpieza del entorno
@@ -259,6 +308,10 @@ make stop-minikube
 - [ ] que no se gernere una nueva version cada vez, sino qeu se genere solo cuando se pushea, luego conserve esa version en algun lugar (.log tal vez)
 - [ ] arreglar el tema de cuando usar docker para docker y cuando para minikube
 - [ ] cada vez que hago algo con -rm, no esta matando ese docker.
+- [ ] mejorar el smoke, solo esta probando si esta levantado, hay que probar las demas interfaces solicitadas.
+- [ ] cambiar tt.yaml por traveltrack.yaml
+- [ ] cambiar el make apply por make helm apply, o algo por el estilo.
+- [ ] revision del makefile, si estan bien los .phony
 
 
 ayuda memoria

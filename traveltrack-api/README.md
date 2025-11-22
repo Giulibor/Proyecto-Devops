@@ -79,9 +79,9 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 ### 7. Falco (runtime)
 
-- [ ] Instalar Falco en el cluster Minikube
-- [ ] Generar una alerta controlada (evento sospechoso)
-- [ ] Guardar evidencia en `reports/falco-event.log`
+- [x] Instalar Falco en el cluster Minikube
+- [x] Generar una alerta controlada (evento sospechoso)
+- [x] Guardar evidencia en `reports/falco-event.log`
 
 ### 8. Documentación
 
