@@ -1,10 +1,3 @@
-# Dockerfile multi-etapa para construir y servir una aplicación Angular.
-# 
-# Este Dockerfile utiliza un proceso de construcción en dos etapas:
-# 1. Etapa de construcción: Usa un entorno Node.js para instalar dependencias y construir la aplicación Angular.
-# 2. Etapa de ejecución: Usa un servidor Nginx para servir los archivos estáticos compilados.
-#
-
 # ----- Etapa de construcción -----
 FROM node:alpine3.22 AS build
 WORKDIR /app
@@ -28,6 +21,8 @@ RUN ng version && ng build --configuration=production
 
 # ----- Etapa de ejecución -----
 FROM nginxinc/nginx-unprivileged:alpine3.22
+
+USER 101
 
 # Copiar la aplicación Angular compilada desde la etapa de construcción al directorio html por defecto de Nginx
 # Nginx servirá los archivos estáticos desde /usr/share/nginx/html
