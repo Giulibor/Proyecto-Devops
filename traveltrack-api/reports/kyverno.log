@@ -1,32 +1,22 @@
-[RESET] Eliminando todas las ClusterPolicy
-clusterpolicy.kyverno.io "deny-latest-tag" deleted
-clusterpolicy.kyverno.io "disallow-root" deleted
-clusterpolicy.kyverno.io "require-resources" deleted
-[RESET] Reaplicando policies desde ./kyverno-policies/
+clusterpolicy.kyverno.io/deny-latest-tag configured
+clusterpolicy.kyverno.io/disallow-root configured
+clusterpolicy.kyverno.io/require-resources configured
+NAME                ADMISSION   BACKGROUND   READY   AGE     MESSAGE
+deny-latest-tag     true        true         True    3m47s   Ready
+disallow-root       true        true         True    3m47s   Ready
+require-resources   true        true         True    3m47s   Ready
 ----
-[RESET] Eliminando todas las ClusterPolicy
-[RESET] Reaplicando policies desde ./kyverno-policies/
-clusterpolicy.kyverno.io/deny-latest-tag created
-clusterpolicy.kyverno.io/disallow-root created
-clusterpolicy.kyverno.io/require-resources created
-NAME                ADMISSION   BACKGROUND   VALIDATE ACTION   READY   AGE   MESSAGE
-deny-latest-tag     true        true         enforce           True    0s    Ready
-disallow-root       true        true         enforce           True    0s    Ready
-require-resources   true        true         enforce           True    0s    Ready
+[TEST BAD] Intentando aplicar kyverno-tests/bad-pod.yaml
+pod/bad-pod created
+NAME      READY   STATUS                       RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+bad-pod   0/1     CreateContainerConfigError   0          20s   10.244.0.42   minikube   <none>           <none>
 ----
-clusterpolicy.kyverno.io/deny-latest-tag unchanged
-clusterpolicy.kyverno.io/disallow-root unchanged
-clusterpolicy.kyverno.io/require-resources unchanged
-NAME                ADMISSION   BACKGROUND   VALIDATE ACTION   READY   AGE   MESSAGE
-deny-latest-tag     true        true         enforce           True    11s   Ready
-disallow-root       true        true         enforce           True    11s   Ready
-require-resources   true        true         enforce           True    11s   Ready
+[TEST GOOD] Aplicando kyverno-tests/good-pod.yaml
+pod/good-pod created
+NAME       READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+good-pod   1/1     Running   0          20s   10.244.0.43   minikube   <none>           <none>
 ----
-clusterpolicy.kyverno.io/deny-latest-tag unchanged
-clusterpolicy.kyverno.io/disallow-root unchanged
-clusterpolicy.kyverno.io/require-resources unchanged
-NAME                ADMISSION   BACKGROUND   VALIDATE ACTION   READY   AGE     MESSAGE
-deny-latest-tag     true        true         enforce           True    4d23h   Ready
-disallow-root       true        true         enforce           True    4d23h   Ready
-require-resources   true        true         enforce           True    4d23h   Ready
+pod "bad-pod" deleted from traveltrack namespace
+pod "good-pod" deleted from traveltrack namespace
+[CLEAN] Pods de prueba eliminados
 ----
