@@ -1,0 +1,94 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME       = 'snake-app'
+        IMAGE_TAG      = "1.0.3"
+        IMAGE          = "${APP_NAME}:${IMAGE_TAG}"
+        KUBE_NAMESPACE = "lab4"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Semgrep') {
+            steps {
+                sh '''
+                mkdir -p reports
+                semgrep \
+                    --config auto \
+                    lab4final/front/snakeapp \
+                    --output reports/semgrep-report.txt \
+                    --error
+                '''
+            }
+        }
+
+        stage('Snyk - dependencias') {
+            steps {
+                withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
+                    sh '''
+                    mkdir -p reports
+                    cd lab4final/front/snakeapp
+                    snyk test \
+                    --file=package.json \
+                    --severity-threshold=critical \
+                    --json > ../../reports/snyk-report.json
+                    '''
+                }
+            }
+        }
+
+
+
+        stage('Build & Test Angular') {
+            steps {
+                sh '''
+                cd lab4final/front/snakeapp
+                npm ci
+                # Saltar tests porque requieren Chrome
+                echo "Skipping Angular tests"
+                npm run build -- --configuration=production
+                '''
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                sh '''
+                eval "$(minikube docker-env)"
+                docker build -t ${IMAGE} lab4final/front/snakeapp
+                docker tag ${IMAGE} ${APP_NAME}:latest
+                '''
+            }
+        }
+
+        stage('Deploy con Helm') {
+            steps {
+                sh '''
+                    # Salgo del daemon de Minikube
+                    eval "$(minikube docker-env -u)"
+
+                    kubectl create namespace lab4 --dry-run=client -o yaml | kubectl apply -f -
+
+                    helm upgrade --install lab4 lab4final/helm/lab4-demo \
+                        -f lab4final/helm/lab4-demo/values.yaml \
+                        -f lab4final/helm/lab4-demo/values-dev.yaml \
+                        --set image.tag=${IMAGE_TAG} \
+                        -n lab4
+                '''
+            }
+        }
+
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+        }
+    }
+}

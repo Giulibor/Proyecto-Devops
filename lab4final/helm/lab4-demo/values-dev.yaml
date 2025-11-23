@@ -1,0 +1,21 @@
+replicaCount: 2
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: snakeappdev.localtest.me
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "128Mi"
+  limits:
+    cpu: "50m"
+    memory: "256Mi"
+
+config:
+  APP_ENV: "dev"

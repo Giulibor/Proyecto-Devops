@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resources
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: containers-require-limits-requests
+      match:
+        resources:
+          kinds:
+            - Pod
+            - Deployment
+      validate:
+        message: Containers must have resources requests and limits
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"

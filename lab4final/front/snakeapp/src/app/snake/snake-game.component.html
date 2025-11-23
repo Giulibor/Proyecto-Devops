@@ -1,0 +1,21 @@
+<div class="panel">
+  <div class="controls">
+    <button (click)="start()" [disabled]="isRunning() && !isPaused()">Start</button>
+    <button (click)="togglePause()" [disabled]="isGameOver() || !isRunning()">
+      {{ isPaused() ? 'Resume' : 'Pause' }}
+    </button>
+    <button (click)="resetGame()">Reset</button>
+    <span class="stat">Score: {{score()}}</span>
+    <span class="stat">High: {{highScore()}}</span>
+  </div>
+
+  <canvas
+    #gameCanvas
+    [attr.width]="canvasW"
+    [attr.height]="canvasH"
+    class="game-canvas"
+    aria-label="Snake Game canvas"
+  ></canvas>
+
+  <p class="hint">Controles: Flechas / WASD. Space/Enter: Pausa.</p>
+</div>

@@ -1,0 +1,297 @@
+apiVersion: v1
+items:
+- apiVersion: wgpolicyk8s.io/v1alpha2
+  kind: PolicyReport
+  metadata:
+    creationTimestamp: "2025-11-23T15:08:03Z"
+    generation: 5
+    labels:
+      app.kubernetes.io/managed-by: kyverno
+    name: 00b2bcfd-6daf-4231-ac03-4162efef77c1
+    namespace: lab4
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: lab4-lab4-demo-76cc9c7f46-97wth
+      uid: 00b2bcfd-6daf-4231-ac03-4162efef77c1
+    resourceVersion: "89441"
+    uid: 8b1835d5-3795-40e5-9441-604356969016
+  results:
+  - message: validation rule 'disallow-latest-tag' passed.
+    policy: disallow-latest-tag
+    properties:
+      process: background scan
+    result: pass
+    rule: disallow-latest-tag
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  - message: validation rule 'require-liveness-readiness' passed.
+    policy: require-probes
+    properties:
+      process: background scan
+    result: pass
+    rule: require-liveness-readiness
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  - message: validation rule 'require-container-resources' passed.
+    policy: require-resources
+    properties:
+      process: background scan
+    result: pass
+    rule: require-container-resources
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  - message: validation rule 'require-run-as-non-root' passed.
+    policy: require-run-as-non-root
+    properties:
+      process: background scan
+    result: pass
+    rule: require-run-as-non-root
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  scope:
+    apiVersion: v1
+    kind: Pod
+    name: lab4-lab4-demo-76cc9c7f46-97wth
+    namespace: lab4
+    uid: 00b2bcfd-6daf-4231-ac03-4162efef77c1
+  summary:
+    error: 0
+    fail: 0
+    pass: 4
+    skip: 0
+    warn: 0
+- apiVersion: wgpolicyk8s.io/v1alpha2
+  kind: PolicyReport
+  metadata:
+    creationTimestamp: "2025-11-23T15:08:03Z"
+    generation: 5
+    labels:
+      app.kubernetes.io/managed-by: kyverno
+    name: 2fe9f216-5736-49b3-ae96-ac8ef17d25ec
+    namespace: lab4
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: lab4-lab4-demo-76cc9c7f46-d44ks
+      uid: 2fe9f216-5736-49b3-ae96-ac8ef17d25ec
+    resourceVersion: "89440"
+    uid: e5bcacd2-7780-4aa6-8283-2a9275dd01bd
+  results:
+  - message: validation rule 'disallow-latest-tag' passed.
+    policy: disallow-latest-tag
+    properties:
+      process: background scan
+    result: pass
+    rule: disallow-latest-tag
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  - message: validation rule 'require-liveness-readiness' passed.
+    policy: require-probes
+    properties:
+      process: background scan
+    result: pass
+    rule: require-liveness-readiness
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  - message: validation rule 'require-container-resources' passed.
+    policy: require-resources
+    properties:
+      process: background scan
+    result: pass
+    rule: require-container-resources
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  - message: validation rule 'require-run-as-non-root' passed.
+    policy: require-run-as-non-root
+    properties:
+      process: background scan
+    result: pass
+    rule: require-run-as-non-root
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910915
+  scope:
+    apiVersion: v1
+    kind: Pod
+    name: lab4-lab4-demo-76cc9c7f46-d44ks
+    namespace: lab4
+    uid: 2fe9f216-5736-49b3-ae96-ac8ef17d25ec
+  summary:
+    error: 0
+    fail: 0
+    pass: 4
+    skip: 0
+    warn: 0
+- apiVersion: wgpolicyk8s.io/v1alpha2
+  kind: PolicyReport
+  metadata:
+    creationTimestamp: "2025-11-23T15:08:27Z"
+    generation: 4
+    labels:
+      app.kubernetes.io/managed-by: kyverno
+    name: 36a025a4-be98-41a3-af85-8bbb2dac9335
+    namespace: lab4
+    ownerReferences:
+    - apiVersion: apps/v1
+      kind: ReplicaSet
+      name: lab4-lab4-demo-76cc9c7f46
+      uid: 36a025a4-be98-41a3-af85-8bbb2dac9335
+    resourceVersion: "89445"
+    uid: 8cac9538-18a5-461d-a766-ee52b1be3652
+  results:
+  - message: validation rule 'autogen-disallow-latest-tag' passed.
+    policy: disallow-latest-tag
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-disallow-latest-tag
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910916
+  - message: validation rule 'autogen-require-liveness-readiness' passed.
+    policy: require-probes
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-require-liveness-readiness
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910916
+  - message: validation rule 'autogen-require-container-resources' passed.
+    policy: require-resources
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-require-container-resources
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910916
+  - message: validation rule 'autogen-require-run-as-non-root' passed.
+    policy: require-run-as-non-root
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-require-run-as-non-root
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910916
+  scope:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: lab4-lab4-demo-76cc9c7f46
+    namespace: lab4
+    uid: 36a025a4-be98-41a3-af85-8bbb2dac9335
+  summary:
+    error: 0
+    fail: 0
+    pass: 4
+    skip: 0
+    warn: 0
+- apiVersion: wgpolicyk8s.io/v1alpha2
+  kind: PolicyReport
+  metadata:
+    creationTimestamp: "2025-11-23T15:08:03Z"
+    generation: 4
+    labels:
+      app.kubernetes.io/managed-by: kyverno
+    name: f1708599-e64e-4acb-8051-4c8afb182ff3
+    namespace: lab4
+    ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: lab4-lab4-demo
+      uid: f1708599-e64e-4acb-8051-4c8afb182ff3
+    resourceVersion: "89432"
+    uid: b71ccc43-2dac-452e-9120-cf6d69064a5e
+  results:
+  - message: validation rule 'autogen-disallow-latest-tag' passed.
+    policy: disallow-latest-tag
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-disallow-latest-tag
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910912
+  - message: validation rule 'autogen-require-liveness-readiness' passed.
+    policy: require-probes
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-require-liveness-readiness
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910912
+  - message: validation rule 'autogen-require-container-resources' passed.
+    policy: require-resources
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-require-container-resources
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910912
+  - message: validation rule 'autogen-require-run-as-non-root' passed.
+    policy: require-run-as-non-root
+    properties:
+      process: background scan
+    result: pass
+    rule: autogen-require-run-as-non-root
+    scored: true
+    source: kyverno
+    timestamp:
+      nanos: 0
+      seconds: 1763910912
+  scope:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lab4-lab4-demo
+    namespace: lab4
+    uid: f1708599-e64e-4acb-8051-4c8afb182ff3
+  summary:
+    error: 0
+    fail: 0
+    pass: 4
+    skip: 0
+    warn: 0
+kind: List
+metadata:
+  resourceVersion: ""

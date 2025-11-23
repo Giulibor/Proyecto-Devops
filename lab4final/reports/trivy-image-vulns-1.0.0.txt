@@ -1,0 +1,81 @@
+
+Report Summary
+
+┌─────────────────────────────────┬────────┬─────────────────┬─────────┐
+│             Target              │  Type  │ Vulnerabilities │ Secrets │
+├─────────────────────────────────┼────────┼─────────────────┼─────────┤
+│ snake-app:1.0.0 (alpine 3.21.3) │ alpine │       19        │    -    │
+└─────────────────────────────────┴────────┴─────────────────┴─────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+snake-app:1.0.0 (alpine 3.21.3)
+===============================
+Total: 19 (MEDIUM: 15, HIGH: 2, CRITICAL: 2)
+
+┌────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┬──────────────────────────────────────────────────────────────┐
+│  Library   │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │                            Title                             │
+├────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ curl       │ CVE-2025-10148 │ MEDIUM   │ fixed  │ 8.12.1-r1         │ 8.14.1-r2     │ curl: predictable WebSocket mask                             │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-10148                   │
+│            ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-4947  │          │        │                   │ 8.14.0-r0     │ libcurl: curl: QUIC certificate check skip with wolfSSL      │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-4947                    │
+│            ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-5025  │          │        │                   │               │ curl: libcurl: QUIC Certificate Pinning Bypass               │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-5025                    │
+│            ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-5399  │          │        │                   │ 8.14.1-r0     │ curl: libcurl: WebSocket endless loop                        │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-5399                    │
+│            ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-9086  │          │        │                   │ 8.14.1-r2     │ curl: libcurl: Curl out of bounds read for cookie path       │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-9086                    │
+├────────────┼────────────────┤          │        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ libcrypto3 │ CVE-2025-9230  │          │        │ 3.3.3-r0          │ 3.3.5-r0      │ openssl: Out-of-bounds read & write in RFC 3211 KEK Unwrap   │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-9230                    │
+│            ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-9231  │          │        │                   │               │ openssl: Timing side-channel in SM2 algorithm on 64 bit ARM  │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-9231                    │
+├────────────┼────────────────┤          │        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ libcurl    │ CVE-2025-10148 │          │        │ 8.12.1-r1         │ 8.14.1-r2     │ curl: predictable WebSocket mask                             │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-10148                   │
+│            ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-4947  │          │        │                   │ 8.14.0-r0     │ libcurl: curl: QUIC certificate check skip with wolfSSL      │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-4947                    │
+│            ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-5025  │          │        │                   │               │ curl: libcurl: QUIC Certificate Pinning Bypass               │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-5025                    │
+│            ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-5399  │          │        │                   │ 8.14.1-r0     │ curl: libcurl: WebSocket endless loop                        │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-5399                    │
+│            ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-9086  │          │        │                   │ 8.14.1-r2     │ curl: libcurl: Curl out of bounds read for cookie path       │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-9086                    │
+├────────────┼────────────────┤          │        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ libexpat   │ CVE-2025-59375 │          │        │ 2.7.0-r0          │ 2.7.2-r0      │ expat: libexpat in Expat allows attackers to trigger large   │
+│            │                │          │        │                   │               │ dynamic memory allocations...                                │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-59375                   │
+├────────────┼────────────────┤          │        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ libssl3    │ CVE-2025-9230  │          │        │ 3.3.3-r0          │ 3.3.5-r0      │ openssl: Out-of-bounds read & write in RFC 3211 KEK Unwrap   │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-9230                    │
+│            ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-9231  │          │        │                   │               │ openssl: Timing side-channel in SM2 algorithm on 64 bit ARM  │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-9231                    │
+├────────────┼────────────────┼──────────┤        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ libxml2    │ CVE-2025-49794 │ CRITICAL │        │ 2.13.4-r6         │ 2.13.9-r0     │ libxml: Heap use after free (UAF) leads to Denial of service │
+│            │                │          │        │                   │               │ (DoS)...                                                     │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-49794                   │
+│            ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-49796 │          │        │                   │               │ libxml: Type confusion leads to Denial of service (DoS)      │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-49796                   │
+│            ├────────────────┼──────────┤        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-49795 │ HIGH     │        │                   │               │ libxml: Null pointer dereference leads to Denial of service  │
+│            │                │          │        │                   │               │ (DoS)                                                        │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-49795                   │
+│            ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│            │ CVE-2025-6021  │          │        │                   │               │ libxml2: Integer Overflow in xmlBuildQName() Leads to Stack  │
+│            │                │          │        │                   │               │ Buffer Overflow in libxml2...                                │
+│            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2025-6021                    │
+└────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┴──────────────────────────────────────────────────────────────┘

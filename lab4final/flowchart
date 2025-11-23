@@ -1,0 +1,48 @@
+flowchart LR
+
+    subgraph LOCALHOST["Máquina local del estudiante"]
+        subgraph JENKINS["Jenkins (CI/CD)"]
+            JF[Jenkinsfile<br/>Semgrep<br/>Snyk<br/>Docker build<br/>Helm deploy]
+        end
+
+        BROWSER[Browser del usuario]
+    end
+
+    subgraph MINIKUBE["Cluster Minikube"]
+        subgraph INGRESS["Ingress-NGINX"]
+            R1[(Reglas de Ingress<br/>snakeapp.localtest.me)]
+        end
+
+        subgraph NAMESPACE_LAB4["Namespace lab4"]
+            DEPLOY[[Deployment<br/>snake-app]]
+            SVC[(Service)]
+            CM[(ConfigMap)]
+        end
+
+        subgraph KYVERNO["Kyverno (Validación)"]
+            KPOL[Políticas<br/>non-root<br/>no-latest<br/>resources<br/>probes]
+        end
+
+        subgraph FALCO["Falco (Detecta amenazas)"]
+            FDAEMON[(DaemonSet<br/>falco)]
+        end
+
+        subgraph GRAFANA["Grafana (Observabilidad)"]
+            GDASH[(Dashboards<br/>Métricas)]
+        end
+
+    end
+
+    %% Flujo de CI/CD
+    JF -->|Build & Push interno| DEPLOY
+    JF -->|Helm upgrade/install| DEPLOY
+
+    %% Tráfico de usuario
+    BROWSER --> R1 --> SVC --> DEPLOY
+
+    %% Validaciones / Seguridad
+    DEPLOY --> KPOL
+    DEPLOY --> FDAEMON
+
+    %% Observabilidad futura
+    DEPLOY --> GDASH

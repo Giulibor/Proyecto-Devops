@@ -1,0 +1,11 @@
+rules:
+  - id: no-eval
+    message: Disallow eval
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: eval(...)
+  - id: no-child-process-exec
+    message: Disallow child_process.exec
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern: exec(...)

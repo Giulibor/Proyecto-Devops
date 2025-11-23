@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "lint": "mkdir -p reports && eslint src/**/*.{ts,tsx} -f stylish -o reports/eslint-report.txt || true",
+    "semgrep": "mkdir -p reports && npx semgrep --config ./.semgrep.yml --json > reports/semgrep-report.json || true",
+    "audit": "mkdir -p reports && npm audit --json > reports/npm-audit.txt || true"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -20,6 +23,11 @@
     "@types/express": "^4.17.21",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.5.4",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.11.1",
+    "eslint-plugin-security": "^3.0.1",
+    "semgrep": "^0.0.1",
     "tsx": "^4.19.1",
     "typescript": "^5.4.5"
   },
