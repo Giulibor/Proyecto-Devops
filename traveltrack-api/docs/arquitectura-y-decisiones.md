@@ -1,10 +1,10 @@
-
-
 # Arquitectura y Decisiones Técnicas — TravelTrack API
 
 ## 1. Objetivo del documento
 
 Describir las decisiones técnicas tomadas para cumplir con los requisitos del laboratorio: contenerización segura, despliegue reproducible, seguridad en varias capas, automatización y validación del entorno.
+
+Este documento funciona como suplemento técnico del README y de la guía de despliegue, y resume la experiencia real obtenida al ejecutar el laboratorio.
 
 ---
 
@@ -83,6 +83,13 @@ La construcción multi‑arch (amd64/arm64) no fue opcional; se requirió debido
 - Limpieza de entorno mediante borrado completo del namespace.
 - El smoke test automatizado realiza un port‑forward temporal y valida el endpoint `/health` como verificación mínima del despliegue.
 - La limpieza de entorno incluye el borrado completo del namespace `traveltrack` y, cuando corresponde, la detención de Minikube.
+
+**Decisiones adicionales complementarias:**
+
+- Se estableció una separación estricta entre build y deploy: Kubernetes solo usa imágenes provenientes de GHCR y nunca del daemon local de Docker.
+- El acceso externo se mantiene únicamente mediante `kubectl port-forward` para evitar exponer servicios con NodePort o LoadBalancer en esta etapa.
+- Se reforzó el uso de ConfigMap como única fuente de parámetros internos, evitando duplicar valores en los manifiestos renderizados.
+
 
 ### 2.6 Kyverno
 
@@ -192,7 +199,6 @@ La construcción multi‑arch (amd64/arm64) no fue opcional; se requirió debido
 - Todas las herramientas auxiliares (Helm, YQ, Trivy, Dive) se ejecutan mediante contenedores, lo que elimina la necesidad de instalarlas en el host.
 - Se identificó que mantener habilitado `minikube docker-env` afecta herramientas como Trivy y Dive; se incorporó el flujo de limpieza usando `eval $(minikube docker-env -u)` para garantizar que los targets utilicen siempre el daemon correcto.
 - La desinstalación de Kyverno debe limpiar también los webhooks cluster‑scope para evitar que el API server quede en estado inconsistente.
-
 
 ---
 
