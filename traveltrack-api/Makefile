@@ -11,6 +11,7 @@
 #   make uninstall
 
 SHELL := /bin/bash
+.SHELLFLAGS := -eu -o pipefail -c
 
 .DEFAULT_GOAL := help
 
@@ -30,10 +31,6 @@ endif
 # Si alguna variable no está definida, asignar valores por defecto
 IMAGE_VERSION ?= auto
 APP_VERSION   ?= 1.0.0
-
-ifeq ($(IMAGE_VERSION),auto)
-IMAGE_VERSION := $(shell date +"%Y.%m.%d.%H.%M")
-endif
 
 IMAGE         ?= traveltrack-api
 NAMESPACE     ?= traveltrack
@@ -74,6 +71,21 @@ _ensure-dirs:
 	  exit 1; \
 	fi
 
+# -------- Targets compuestos de alto nivel --------
+.PHONY: deploy-from-local-build deploy-from-ghcr security-checks full-pipeline
+
+deploy-from-local-build: build-in-minikube load-image render apply smoke
+	@echo "[DONE] deploy-local-build completo (build local + load-image + deploy + smoke)"
+
+deploy-from-ghcr: start-minikube render apply smoke
+	@echo "[DONE] deploy-local completo (usando imagen configurada en values.yaml, típicamente GHCR)"
+
+security-checks: kubelinter-scan kyverno-apply kyverno-test-bad kyverno-test-good
+	@echo "[DONE] security-checks completo"
+
+full-pipeline: doctor deploy-local-build security-checks
+	@echo "[DONE] full-pipeline completo"
+
 # -------- Minikube --------
 .PHONY: start-minikube stop-minikube status
 start-minikube: ## Inicia minikube
@@ -106,7 +118,7 @@ doctor: ## Diagnóstico rápido del entorno (Docker, Minikube, kubectl, buildx)
 	@echo "=== DOCTOR ==="
 	@echo "[OS] uname -s: $$(uname -s)"
 	@echo "[Docker] version:"; docker version --format '{{.Server.Version}}' 2>/dev/null || echo "no disponible"
-	@echo "[Docker] daemon name:"; docker info 2>/dev/null | grep -i '^ name' || echo "no disponible"
+	@echo "[Docker] daemon name:"; docker info 2>/devnull | grep -i '^ name' || echo "no disponible"
 	@echo "[kubectl] client:"; kubectl version --client --short 2>/dev/null || echo "no disponible"
 	@echo "[minikube] version:"; minikube version 2>/dev/null || echo "no disponible"
 	@echo "[buildx] info:"; docker buildx version 2>/dev/null || echo "no disponible"
@@ -115,7 +127,7 @@ doctor: ## Diagnóstico rápido del entorno (Docker, Minikube, kubectl, buildx)
 
 # -------- Builds de imagen --------
 .PHONY: build-in-minikube build-host load-image
-build-in-minikube: use-minikube-docker ## Construye imagen dentro de minikube
+build-in-minikube: start-minikube use-minikube-docker ## Construye imagen dentro de minikube
 	@echo "[BUILD] Build dentro de Minikube"
 	docker build -t $(IMAGE):$(IMAGE_VERSION) .
 
@@ -127,7 +139,7 @@ load-image: ## Carga la imagen al cluster de Minikube
 	minikube image load $(IMAGE):$(IMAGE_VERSION)
 
 # -------- Buildx (multi-arch) --------
-.PHONY: buildx-create buildx-use buildx-inspect imagetools-inspect buildx-push
+.PHONY: buildx-create buildx-use buildx-inspect imagetools-inspect
 buildx-create: use-host-docker ## Crea y selecciona un builder buildx (si no existe) y hace bootstrap
 	@docker buildx inspect xbuilder >/dev/null 2>&1 || docker buildx create --name xbuilder --use
 	docker buildx use xbuilder
@@ -158,22 +170,13 @@ ghcr-tag: ## Etiqueta la imagen local para GHCR
 ghcr-push: ## Publica la imagen en GHCR con tag inmutable
 	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
 	docker push $(GHCR_IMAGE):$(IMAGE_VERSION)
+
 ghcr-publish: ## Publica en GHCR (multi-arch por defecto). Use MULTIARCH=false para single-arch
 ifeq ($(MULTIARCH),false)
-	$(MAKE) ghcr-login ghcr-tag ghcr-push
-	@if [ -z "$(GH_USER)" ]; then echo "[ERROR] GH_USER no definido"; exit 1; fi
-	@echo "[INFO] Actualizando $(VALUES_FILE) con repository en GHCR (vía yq en contenedor)"
-	docker run --rm -v "$$PWD":/work -w /work \
-	  mikefarah/yq:4 \
-	  -i '.image.repository = "ghcr.io/$(GH_USER)/$(IMAGE)"' $(VALUES_FILE)
-	@echo "[INFO] Actualizando $(VALUES_FILE) con tag (vía yq en contenedor)"
-	docker run --rm -v "$$PWD":/work -w /work \
-	  mikefarah/yq:4 \
-	  -i '.image.tag = "$(IMAGE_VERSION)"' $(VALUES_FILE)
-	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(IMAGE_VERSION)"
+	$(MAKE) ghcr-login ghcr-tag ghcr-push update-values
 else
 	@echo "[INFO] MULTIARCH=$(MULTIARCH) → ejecutando buildx-push"
-	$(MAKE) buildx-push
+	$(MAKE) buildx-push update-values
 endif
 
 update-values: ## Actualiza repository/tag en values.yaml usando yq en contenedor
@@ -207,6 +210,7 @@ render: _ensure-dirs use-host-docker ## Renderiza chart Helm
 apply: ## Aplica la configuración en Kubernetes
 	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n $(NAMESPACE) -f $(RENDER_FILE)
+	sleep 20
 	kubectl get deploy,po,svc -n $(NAMESPACE)
 
 uninstall: ## Desinstala la aplicación del cluster
@@ -236,6 +240,7 @@ smoke: ## Pruebas rápidas de la aplicación
 clean: ## Limpia archivos generados
 	- rm -f $(RENDER_FILE)
 	@echo "[CLEAN] Limpieza completada"
+
 # -------- Publicar multi-arch en GHCR --------
 .PHONY: buildx-push
 buildx-push: buildx-create ghcr-login ## Construye y publica imagen multi-arch (linux/amd64,linux/arm64) en GHCR [ruta por defecto de ghcr-publish]
@@ -247,14 +252,7 @@ buildx-push: buildx-create ghcr-login ## Construye y publica imagen multi-arch (
 	  --push \
 	  .
 	@echo "[OK] Publicado: $(GHCR_IMAGE):$(IMAGE_VERSION)"
-	@echo "[INFO] Actualizando $(VALUES_FILE) con repository y tag"
-	docker run --rm -v "$$PWD":/work -w /work \
-	  mikefarah/yq:4 \
-	  -i '.image.repository = "ghcr.io/$(GH_USER)/$(IMAGE)"' $(VALUES_FILE)
-	docker run --rm -v "$$PWD":/work -w /work \
-	  mikefarah/yq:4 \
-	  -i '.image.tag = "$(IMAGE_VERSION)"' $(VALUES_FILE)
-	@echo "[OK] $(VALUES_FILE) actualizado con GHCR=ghcr.io/$(GH_USER)/$(IMAGE) y tag=$(IMAGE_VERSION)"
+
 # -------- Mostrar versiones --------
 .PHONY: print-version
 print-version: ## Muestra la versión actual de la imagen y de la aplicación
@@ -286,15 +284,20 @@ endif
 
 # -------- Kyverno install --------
 .PHONY: kyverno-install-kubectl
-kyverno-install-kubectl: ## Instala Kyverno en el cluster vía kubectl
+kyverno-install-kubectl: ## Instala Kyverno en el cluster vía kubectl (delete+create)
 	@echo "[INSTALL] Instalando Kyverno en el cluster (namespace: $(KYVERNO_NS))"
-	kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.11.1/install.yaml
+	@echo "[INSTALL] Limpiando recursos previos de Kyverno (si existieran)..."
+	- kubectl delete -f https://github.com/kyverno/kyverno/releases/download/v1.16.0/install.yaml --ignore-not-found=true || true
+	kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.16.0/install.yaml
+	sleep 20
 	kubectl -n $(KYVERNO_NS) get deploy,po
 
 kyverno-uninstall: ## Borra completamente Kyverno del cluster (usa con cuidado)
-	@echo "[KYVERNO] Eliminando namespace kyverno..."
-	- kubectl delete ns kyverno --ignore-not-found=true
-	@echo "[KYVERNO] Kyverno eliminado. Recordá reinstalar con make kyverno-install-kubectl."
+	@echo "[KYVERNO] Eliminando recursos de Kyverno usando el manifest oficial..."
+	- kubectl delete -f https://github.com/kyverno/kyverno/releases/download/v1.16.0/install.yaml --ignore-not-found=true || true
+	@echo "[KYVERNO] Eliminando namespace kyverno (si sigue existiendo)..."
+	- kubectl delete ns kyverno --ignore-not-found=true || true
+	@echo "[KYVERNO] Kyverno eliminado. Podés reinstalar con 'make kyverno-install-kubectl'."
 
 # -------- Kyverno policies testing --------
 .PHONY: kyverno-apply kyverno-test-bad kyverno-test-good kyverno-clean kyverno-reset
@@ -307,21 +310,24 @@ kyverno-apply: ## Aplica políticas y lista cpol
 
 kyverno-test-bad: ## Intenta deploy no conforme y guarda evidencia en kyverno.log
 	@mkdir -p reports
-	@echo "[TEST BAD] Intentando aplicar tests/bad-pod.yaml" | tee -a $(KYVERNO_LOG)
-	- kubectl apply -f tests/bad-pod.yaml -n $(NAMESPACE) >> $(KYVERNO_LOG) 2>&1 || true
+	@echo "[TEST BAD] Intentando aplicar kyverno-tests/bad-pod.yaml" | tee -a $(KYVERNO_LOG)
+	- kubectl apply -f kyverno-tests/bad-pod.yaml -n $(NAMESPACE) >> $(KYVERNO_LOG) 2>&1 || true
+	sleep 20
+	kubectl -n $(NAMESPACE) get pod bad-pod -o wide | tee -a $(KYVERNO_LOG)
 	@echo "----" >> $(KYVERNO_LOG)
 
 kyverno-test-good: ## Deploy conforme y registrar evidencia en kyverno.log
 	@mkdir -p reports
-	@echo "[TEST GOOD] Aplicando tests/good-pod.yaml" | tee -a $(KYVERNO_LOG)
+	@echo "[TEST GOOD] Aplicando kyverno-tests/good-pod.yaml" | tee -a $(KYVERNO_LOG)
 	kubectl delete pod good-pod -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
-	kubectl apply -f tests/good-pod.yaml -n $(NAMESPACE) | tee -a $(KYVERNO_LOG)
+	kubectl apply -f kyverno-tests/good-pod.yaml -n $(NAMESPACE) | tee -a $(KYVERNO_LOG)
+	sleep 20
 	kubectl -n $(NAMESPACE) get pod good-pod -o wide | tee -a $(KYVERNO_LOG)
 	@echo "----" >> $(KYVERNO_LOG)
 
 kyverno-clean: ## Limpia pods de prueba
-	- kubectl delete -f tests/bad-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
-	- kubectl delete -f tests/good-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	- kubectl delete -f kyverno-tests/bad-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
+	- kubectl delete -f kyverno-tests/good-pod.yaml -n $(NAMESPACE) --ignore-not-found=true >> $(KYVERNO_LOG) 2>&1
 	@echo "[CLEAN] Pods de prueba eliminados" | tee -a $(KYVERNO_LOG)
 	@echo "----" >> $(KYVERNO_LOG)
 
@@ -334,17 +340,65 @@ kyverno-reset: ## Borra todas las ClusterPolicy y reaplica desde policies/
 	kubectl get cpol | tee -a $(KYVERNO_LOG)
 	@echo "----" >> $(KYVERNO_LOG)
 
+# -------- Trivy scan --------
+.PHONY: trivy-scan trivy-summary dive-image
+trivy-scan: use-host-docker ## Ejecuta Trivy sobre la imagen actual y genera reports/trivy-report.json
+	@if [ -z "$(GH_USER)" ]; then \
+	  echo "[ERROR] GH_USER no definido. Defínelo en .env o en el entorno."; \
+	  exit 1; \
+	fi
+	@echo "[TRIVY] Escaneando imagen $(GHCR_IMAGE):$(IMAGE_VERSION)"
+	@mkdir -p reports
+	docker run --rm \
+	  -v /var/run/docker.sock:/var/run/docker.sock \
+	  -v "$$PWD":/work \
+	  -w /work \
+	  aquasec/trivy:latest \
+	  image $(GHCR_IMAGE):$(IMAGE_VERSION) \
+	  --scanners vuln \
+	  --format json > reports/trivy-report.json
+	@echo "[TRIVY] Reporte generado en reports/trivy-report.json"
+
+trivy-summary: ## Muestra resumen HIGH/CRITICAL del reporte Trivy o mensaje si está vacío
+	@if [ ! -f reports/trivy-report.json ]; then \
+		echo "[ERROR] No existe reports/trivy-report.json. Primero ejecutar: make trivy-scan"; \
+		exit 1; \
+	fi; \
+	jq_output=$$( jq '.Results[].Vulnerabilities // [] \
+		| .[] \
+		| select(.Severity=="HIGH" or .Severity=="CRITICAL") \
+		| {id: .VulnerabilityID, pkg: .PkgName, severity: .Severity, installed: .InstalledVersion, fixed: .FixedVersion}' \
+		reports/trivy-report.json ); \
+	if [ -z "$$jq_output" ]; then \
+		echo "[TRIVY] No hay vulnerabilidades HIGH/CRITICAL."; \
+	else \
+		echo "$$jq_output"; \
+	fi
+
+dive-image: use-host-docker ## Analiza la imagen actual con Dive (TUI interactiva)
+	@if [ -z "$(GH_USER)" ]; then \
+	  echo "[ERROR] GH_USER no definido. Defínelo en .env o en el entorno."; \
+	  exit 1; \
+	fi
+	@echo "[DIVE] Descargando imagen $(GHCR_IMAGE):$(IMAGE_VERSION) si no está local..."
+	docker pull $(GHCR_IMAGE):$(IMAGE_VERSION)
+	@echo "[DIVE] Lanzando Dive sobre $(GHCR_IMAGE):$(IMAGE_VERSION)"
+	docker run --rm -it \
+	  -v /var/run/docker.sock:/var/run/docker.sock \
+	  wagoodman/dive:latest \
+	  $(GHCR_IMAGE):$(IMAGE_VERSION)
+
 # -------- KubeLinter scan --------
 .PHONY: kubelinter-scan
 kubelinter-scan: ## Ejecuta KubeLinter contra deploy/tt.yaml y genera reports/kubelinter.txt
 	@if [ ! -f deploy/tt.yaml ]; then \
-		echo "⚠️  Manifiesto no encontrado, ejecutando make render..."; \
+		echo "Manifiesto no encontrado, ejecutando make render..."; \
 		$(MAKE) render; \
 	fi
 
-	mkdir -p reports
+	@mkdir -p reports
 
-	docker run --rm \
+	@docker run --rm \
 		-v $(PWD):/work \
 		-w /work \
 		ghcr.io/stackrox/kube-linter:latest \
@@ -355,7 +409,7 @@ kubelinter-scan: ## Ejecuta KubeLinter contra deploy/tt.yaml y genera reports/ku
 # -------- Falco install and testing --------
 .PHONY: falco-install falco-trigger falco-logs falco-uninstall
 falco-install: ## Instala Falco en el cluster Minikube usando Helm (templating) + kubectl
-	@echo "📦 Instalando Falco..."
+	@echo "Instalando Falco..."
 	@kubectl create namespace falco --dry-run=client -o yaml | kubectl apply -f -
 	@mkdir -p deploy
 
@@ -376,15 +430,19 @@ falco-install: ## Instala Falco en el cluster Minikube usando Helm (templating) 
 	@echo "✔ Falco instalado en namespace falco (vía helm template + kubectl apply)"
 
 falco-trigger: ## Genera un evento sospechoso ejecutando un shell dentro de un pod
-	@echo "⚠️  Generando un evento sospechoso..."
-	@POD=$$(kubectl get pods -n $(NAMESPACE) -o jsonpath='{.items[0].metadata.name}'); \
+	@echo "Generando un evento sospechoso..."
+	@POD=$$(kubectl get pods -n $(NAMESPACE) -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
+	if [ -z "$$POD" ]; then \
+	  echo "[ERROR] No se encontró ningún pod en el namespace $(NAMESPACE)"; \
+	  exit 1; \
+	fi; \
 	echo "Ejecutando: kubectl exec -it $$POD -- sh -c 'id; sleep 1'"; \
 	kubectl exec -it -n $(NAMESPACE) $$POD -- sh -c "id; sleep 1" || true
-	@echo "✔ Evento generado (shell interactiva corta dentro del contenedor)"
+	@echo "✔ Evento generado"
 
 falco-logs: ## Extrae logs de Falco a reports/falco-event.log
-	@echo "📝 Extrayendo logs de Falco..."
-	mkdir -p reports
+	@echo "Extrayendo logs de Falco..."
+	@mkdir -p reports
 	@POD=$$(kubectl get pods -n falco -o jsonpath='{.items[0].metadata.name}'); \
 	if [ -z "$$POD" ]; then \
 	  echo "[ERROR] No se encontró ningún pod en el namespace falco"; \
@@ -395,13 +453,7 @@ falco-logs: ## Extrae logs de Falco a reports/falco-event.log
 	kubectl logs -n falco $$POD > reports/falco-event.log
 	@echo "✔ Logs guardados en reports/falco-event.log"
 
-falco-uninstall:
+falco-uninstall: ## Desinstala Falco eliminando el namespace falco
 	@echo "🧹 Desinstalando Falco..."
-	docker run --rm \
-		-v $(PWD):/work \
-		-w /work \
-		--network host \
-		$(HELM_IMG) uninstall falco -n falco || true
-
-	kubectl delete namespace falco --ignore-not-found
+	kubectl delete namespace falco --ignore-not-found=true
 	@echo "✔ Falco desinstalado"

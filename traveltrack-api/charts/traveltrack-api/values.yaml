@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/cardo88/traveltrack-api
-  tag: "2025.11.18.23.10"
+  tag: "2025.11.22.20.07"
   pullPolicy: IfNotPresent
 config:
   APP_VERSION: "1.0.0"
