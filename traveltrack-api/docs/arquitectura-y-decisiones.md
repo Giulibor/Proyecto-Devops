@@ -29,6 +29,17 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 - Limpieza explícita de artefactos del build stage (node_modules, dependencias temporales).
 - Validación con Dive para confirmar eficiencia de capas y ausencia de archivos residuales.
 
+**Validación adicional:**
+
+Mediante Dive se confirmó que la imagen final mantiene un tamaño aproximado de 140 MB, una eficiencia cercana al 99% y apenas ~87 KB de espacio residual. También se verificó que la imagen contiene únicamente dependencias productivas, sin toolchains, caches de build ni artefactos temporales, y que todos los archivos pertenecen al usuario 10001, alineado con la política runAsNonRoot.
+
+**Detalles adicionales surgidos durante el análisis con Trivy:**
+
+- La vulnerabilidad `CVE-2024-21538` se detectó en `cross-spawn@7.0.3`, incluida dentro del npm global provisto por la imagen `node:20-alpine`.
+- Dado que la aplicación no requiere npm en el entorno de ejecución, se decidió eliminar completamente `npm` y `npx` del runtime. Esto elimina el componente vulnerable de la imagen final y reduce la superficie de ataque.
+- La solución no requirió actualizar npm en el runtime; basta con eliminarlo. Trivy solo analiza la imagen final y confirmó que la vulnerabilidad desapareció.
+- Mantener npm actualizado en la etapa de build sigue siendo útil para mantener un ecosistema de dependencias más moderno durante la construcción, aunque no afecta el runtime final.
+
 ### 2.3 Publicación en GHCR
 
 **Qué es:** Registro OCI dentro del ecosistema GitHub.  
@@ -42,6 +53,10 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 - Se actualiza automáticamente `values.yaml` vía YQ luego de publicar en GHCR.
 - Separamos flujos: construcción local vs despliegue usando imagen de GHCR.
 
+**Compatibilidad multi‑arquitectura:**
+
+La construcción multi‑arch (amd64/arm64) no fue opcional; se requirió debido a que el host es ARM64 mientras Minikube puede utilizar binarios amd64 en su daemon interno. Esto aseguró que la imagen pudiera ejecutarse en ambos entornos sin errores.
+
 ### 2.4 Helm
 
 **Qué es:** Herramienta de plantillas para Kubernetes.  
@@ -50,9 +65,10 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 
 **Decisiones adicionales:**
 
-- Helm se ejecuta mediante contenedor, evitando instalación en el host.
+- Helm no se instala en el host; todo se ejecuta mediante contenedores para evitar dependencias locales.
 - El paso `render` permite inspeccionar el YAML final antes de aplicar.
 - `config.APP_VERSION` se inyecta desde Makefile para mantener versiones sincronizadas.
+- Se detectó que los contenedores Helm no persisten repositorios entre ejecuciones, por lo que `repo add`, `repo update` y `template` deben ejecutarse dentro de un mismo contenedor.
 
 ### 2.5 Kubernetes (Deployment, Service, ConfigMap)
 
@@ -65,7 +81,8 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 - El Service se mantiene en ClusterIP para asegurar estabilidad de red interna.
 - Todos los Pods tienen requests/limits obligatorios, alineados con políticas Kyverno.
 - Limpieza de entorno mediante borrado completo del namespace.
-- El smoke test integra automáticamente port‑forward + validación de endpoints.
+- El smoke test automatizado realiza un port‑forward temporal y valida el endpoint `/health` como verificación mínima del despliegue.
+- La limpieza de entorno incluye el borrado completo del namespace `traveltrack` y, cuando corresponde, la detención de Minikube.
 
 ### 2.6 Kyverno
 
@@ -84,7 +101,6 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 - Durante pruebas reales, Kyverno dejó webhooks activos aun después de eliminar el namespace, lo que bloqueó operaciones como `kubectl delete namespace` por fallas en `validate.kyverno.svc-fail`.
 - Se identificó la necesidad de remover manualmente `ValidatingWebhookConfiguration` y `MutatingWebhookConfiguration` para restaurar el funcionamiento normal del cluster.
 - Esto evidencia que la desinstalación de Kyverno debe contemplar la limpieza explícita de webhooks además del namespace.
-
 
 ### 2.7 Auditorías de dependencias (npm audit)
 
@@ -106,7 +122,12 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 
 - Se agregó target `trivy-scan` y `trivy-summary` al Makefile.
 - Escaneo siempre contra GHCR para validar el pipeline completo.
-- Se obliga uso de daemon Docker del host por requerir `/var/run/docker.sock`.
+- Se observó que Trivy requiere acceso al Docker daemon del host vía `/var/run/docker.sock`. Cuando la terminal estaba bajo `minikube docker-env`, Trivy fallaba al no encontrar las imágenes locales, lo que requirió usar `eval $(minikube docker-env -u)` antes de ejecutar los escaneos.
+
+**Observaciones adicionales:**
+
+- El único hallazgo HIGH/CRITICAL provino de una dependencia interna de npm incluida en la base image, no del código del proyecto.
+- La eliminación de npm/npx en el runtime asegura que el archivo vulnerable no exista en la imagen final.
 
 ### 2.9 Análisis de imagen (Dive)
 
@@ -119,6 +140,7 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 - Target `dive-image` permite análisis directo desde GHCR.
 - Validación real de eficiencia (98–99%).
 - Confirmación de ausencia de artefactos de build y capas innecesarias.
+- Dive fue adoptado como herramienta principal tras fallar SlimToolkit (docker-slim) en entornos ARM, donde arrojó errores relacionados con nombres de repositorio basados en hashes de 64 bytes.
 
 ### 2.10 KubeLinter
 
@@ -147,6 +169,7 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 - El trigger original falló porque el contenedor tiene `readOnlyRootFilesystem`; se ajustó el evento sospechoso a un comando que no escribiera en disco (`id; sleep 1`).
 - En este entorno, Falco no llega a registrar alertas aun recibiendo eventos, debido a limitaciones del kernel virtualizado en macOS/Docker Desktop.
 - La instalación final se realiza mediante `helm template` + `kubectl apply`, evitando problemas de kubeconfig desde contenedores Helm.
+- El trigger inicial basado en abrir un shell falló por el uso de `readOnlyRootFilesystem`; se ajustó a un comando que no escribiera en disco (`id; sleep 1`).
 
 ### 2.12 Makefile
 
@@ -164,9 +187,12 @@ Describir las decisiones técnicas tomadas para cumplir con los requisitos del l
 **Observaciones adicionales:**
 
 - El contenedor Helm utiliza `helm` como ENTRYPOINT, lo que generó errores del tipo `unknown command "helm"` al intentar ejecutar `helm helm ...`; se resolvió forzando `--entrypoint sh`.
-- Se descubrió que Helm no persiste repositorios entre invocaciones `docker run`; se consolidó `repo add`, `repo update` y `template` en una sola ejecución dentro del mismo contenedor.
 - La desinstalación de Kyverno solo eliminaba el namespace, dejando webhooks activos; esto afectó targets que usan `kubectl delete namespace`.
 - El target `falco-trigger` fue ajustado para evitar errores de escritura y asegurar que el evento generara actividad detectable por Falco.
+- Todas las herramientas auxiliares (Helm, YQ, Trivy, Dive) se ejecutan mediante contenedores, lo que elimina la necesidad de instalarlas en el host.
+- Se identificó que mantener habilitado `minikube docker-env` afecta herramientas como Trivy y Dive; se incorporó el flujo de limpieza usando `eval $(minikube docker-env -u)` para garantizar que los targets utilicen siempre el daemon correcto.
+- La desinstalación de Kyverno debe limpiar también los webhooks cluster‑scope para evitar que el API server quede en estado inconsistente.
+
 
 ---
 
