@@ -5,71 +5,71 @@
 #### 1. Desde la carpeta `/scripts`, ejecutar `01_up.sh`
 
 #### 2.  Abrí Jenkins en el navegador
-    - `http://localhost:8081`
+- `http://localhost:8081`
 
 #### 3. Logueate con el usuario automático
-    - Usuario: `admin`
-    - Contraseña: `admin123`
+- Usuario: `admin`
+- Contraseña: `admin123`
 #### 4.  Creá el job de tipo Pipeline
-    - Menú superior: “Nuevo Tarea” / “New Item”
-    - En “Enter an item name”: escribí `lab4-pipeline`
+- Menú superior: “Nuevo Tarea” / “New Item”
+- En “Enter an item name”: escribí `lab4-pipeline`
 
-    - En la lista de tipos, seleccioná “Pipeline” (no “Estilo libre / Freestyle”)
+- En la lista de tipos, seleccioná “Pipeline” (no “Estilo libre / Freestyle”)
 
-    - Botón OK
+- Botón OK
 
 #### 5.  Configurá el Pipeline con tu repositorio y Jenkinsfile
-    En la pantalla de configuración del job:
+En la pantalla de configuración del job:
 
-    - Dejá la sección “General” como está (podés poner descripción si querés).
+- Dejá la sección “General” como está (podés poner descripción si querés).
 
-    - Bajá hasta la sección “Pipeline” (al final de la página):
+- Bajá hasta la sección “Pipeline” (al final de la página):
 
-    - Definition / Definición:
-        - Pipeline script from SCM
+- Definition / Definición:
+    - Pipeline script from SCM
 
-    - SCM:
-        - Git
+- SCM:
+    - Git
 
-    - Repository URL:
-        - https://github.com/Giulibor/Proyecto-Devops.git
+- Repository URL:
+    - https://github.com/Giulibor/Proyecto-Devops.git
 
-    - Credentials:
-        - vacío
+- Credentials:
+    - vacío
 
-    - Branch Specifier (Branches to build):
-        - `*/lab4coco`
+- Branch Specifier (Branches to build):
+    - `*/main` (`*/lab4coco` para pruebas)
 
-    - Script Path:
-        - `lab4final/Jenkinsfile`
+- Script Path:
+    - `lab4final/Jenkinsfile`
 
-    - Botón Guardar (Save).
+- Botón Guardar (Save).
 
 #### 6. Ejecutá el pipeline
 
-    - Entrás al job `lab4-pipeline`.
+- Entrás al job `lab4-pipeline`.
 
-    - Clic en “Build Now” / “Construir ahora”.
+- Clic en “Build Now” / “Construir ahora”.
 
 #### 7. Revisá el log del pipeline
 
-    - En la columna izquierda, abajo de “Build History”, clic en el número de build (por ejemplo #1).
+- En la columna izquierda, abajo de “Build History”, clic en el número de build (por ejemplo #1).
 
-    - Clic en “Console Output / Salida de consola”.
+- Clic en “Console Output / Salida de consola”.
 
-    - Verificá que se ejecuten en orden:
+- Verificá que se ejecuten en orden:
 
-        - Checkout del repo
+    - Checkout del repo
 
-        - Semgrep
+    - Semgrep
 
-        - Snyk
+    - Snyk
 
-        - Build Angular
+    - Build Angular
 
-        - Build Docker image
+    - Build Docker image
 
-        - helm upgrade --install ...
+    - helm upgrade --install ...
   
 #### 8. Ver los reportes de seguridad generados
 - Después de ejecutar el pipeline y/o 01_up.sh:
