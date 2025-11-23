@@ -28,5 +28,22 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "lab4-demo.fullname" . }}-config
+          securityContext:
+            runAsUser: 101
+            runAsNonRoot: true
+            privileged: false
+            allowPrivilegeEscalation: false
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
           resources:
 {{- toYaml .Values.resources | nindent 12 }}

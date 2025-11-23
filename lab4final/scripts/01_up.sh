@@ -25,6 +25,12 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
 echo "[+] Crear namespace ${APP_NAMESPACE}"
 kubectl get ns "$APP_NAMESPACE" >/dev/null 2>&1 || kubectl create ns "$APP_NAMESPACE"
 
+echo "[+] Deploy Kyverno"
+sh ./04_kyverno.sh
+
+echo "[+] Deploy Falco"
+sh ./05_falco.sh
+
 echo "[+] Build de imagen Angular (snake-app:1.0.1)"
 docker build -t snake-app:1.0.1 ../front/snakeapp
 
@@ -44,3 +50,10 @@ kubectl describe deployment lab4-lab4-demo -n lab4 | grep -i image
 
 echo "[+] Deploy Jenkins"
 sh ./03_jenkins.sh
+
+echo "[i] Generar reporte kyverno"
+kubectl get policyreport -A -o yaml > ../reports/kyverno-validation.log
+
+echo "[i] Generar reporte Falco"
+FALCO_POD=$(kubectl get pods -n falco -l app.kubernetes.io/name=falco -o jsonpath='{.items[0].metadata.name}')
+kubectl logs -n falco "$FALCO_POD" -c falco > ../reports/falco-event.log || true
