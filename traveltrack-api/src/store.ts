@@ -1,4 +1,4 @@
-import type { TravelRequest } from './types'
+import type { TravelRequest } from './types.js'
 
 const db: { requests: TravelRequest[] } = { requests: [] }
 

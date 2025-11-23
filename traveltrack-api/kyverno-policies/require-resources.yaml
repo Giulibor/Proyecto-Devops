@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resources
+spec:
+  validationFailureAction: enforce
+  rules:
+    - name: check-resource-limits
+      match:
+        resources:
+          kinds: ["Pod"]
+          namespaces:
+            - traveltrack
+          selector:
+            matchLabels:
+              app: traveltrack-api
+      validate:
+        message: "Cada contenedor debe tener requests y limits definidos."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"

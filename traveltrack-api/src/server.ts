@@ -2,8 +2,8 @@ import express from 'express'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cors from 'cors'
-import travelRequests from './routes/travelRequests'
-import { loadEnv } from './config'
+import travelRequests from './routes/travelRequests.js'
+import { loadEnv } from './config.js'
 
 const env = loadEnv()
 const app = express()

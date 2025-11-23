@@ -1,0 +1,22 @@
+clusterpolicy.kyverno.io/deny-latest-tag configured
+clusterpolicy.kyverno.io/disallow-root configured
+clusterpolicy.kyverno.io/require-resources configured
+NAME                ADMISSION   BACKGROUND   READY   AGE     MESSAGE
+deny-latest-tag     true        true         True    3m47s   Ready
+disallow-root       true        true         True    3m47s   Ready
+require-resources   true        true         True    3m47s   Ready
+----
+[TEST BAD] Intentando aplicar kyverno-tests/bad-pod.yaml
+pod/bad-pod created
+NAME      READY   STATUS                       RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+bad-pod   0/1     CreateContainerConfigError   0          20s   10.244.0.42   minikube   <none>           <none>
+----
+[TEST GOOD] Aplicando kyverno-tests/good-pod.yaml
+pod/good-pod created
+NAME       READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+good-pod   1/1     Running   0          20s   10.244.0.43   minikube   <none>           <none>
+----
+pod "bad-pod" deleted from traveltrack namespace
+pod "good-pod" deleted from traveltrack namespace
+[CLEAN] Pods de prueba eliminados
+----
