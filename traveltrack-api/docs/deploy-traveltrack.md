@@ -1,320 +1,280 @@
-# Guía de Deploy — TravelTrack API
-
-Esta guía describe el flujo estándar para **construir, publicar y probar la imagen de la API TravelTrack**.
+# Guía de Deploy — TravelTrack API  
 
 ---
 
-## 0) (Opcional) Requisitos rápidos
+## 0. Por dónde comenzar?
 
-Verificar que las variables y versiones estén correctamente configuradas:
-
-```bash
-make print-version
-```
-
----
-# Etapa 1
-## 1) Preparación
-
-Cargar credenciales y validar el acceso a GitHub Container Registry (GHCR):
-
-```bash
-echo "$GH_USER"
-test -n "$GH_TOKEN" && echo "OK TOKEN" || echo "FALTA TOKEN"
-make ghcr-login
-```
-
-- `GH_USER`: usuario de GitHub.
-    
-- `GH_TOKEN`: token personal con permisos `write:packages`.
-    
-- `make ghcr-login`: autentica el cliente Docker en GHCR.
-    
+Una vez descargado el repositorio `https://github.com/Giulibor/Proyecto-Devops.git`
+Desde la terminal, situarse en la carpeta `Proyecto-Devops/traveltrack-api/`
 
 ---
 
-## 2) Build multi-arquitectura + Push
+## 1. Empaquetado y Publicación de Imágenes (GHCR)
 
-Construir la imagen para `amd64` y `arm64`, y publicarla directamente en GHCR:
+### 1.1 Credenciales GHCR
+
+Requisitos, tener ya los siguientes datos en `.env`:
+
+- `GH_USER`: tu usuario de GitHub.
+- `GH_TOKEN`: token personal con permiso `write:packages`.
+
+### 1.2 Publicación completa (multi-arch)  
+
+Para construir multi-arquitectura (amd64 + arm64), publicar en GHCR **y actualizar el chart Helm**:
 
 ```bash
-make buildx-push
+make ghcr-publish
 ```
 
 Este comando:
 
-- Genera automáticamente `IMAGE_VERSION` (fecha/hora si está en `auto`).
-    
-- Compila para múltiples arquitecturas (`linux/amd64`, `linux/arm64`).
-    
-- Sube la imagen a `ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION`.
-    
+- Genera `IMAGE_VERSION` si está en `auto`.
+- Publica `ghcr.io/$GH_USER/traveltrack-api:$IMAGE_VERSION`.
+- Actualiza `charts/traveltrack-api/values.yaml` (repository + tag).
 
 ---
 
-## 3) Verificación de publicación
-
-Inspeccionar el manifiesto publicado y confirmar las arquitecturas disponibles:
+### 1.3 Verificación de la imagen publicada
 
 ```bash
 make imagetools-inspect
 ```
 
-Debe mostrar al menos las variantes `linux/amd64` y `linux/arm64`.
+Debe listar al menos:
+
+- `linux/amd64`
+- `linux/arm64`
 
 ---
-# Etapa 2+3
-## 4) Despliegue en Kubernetes con Helm
 
-### 4.0 Iniciar Minikube
+## 2. Deploy en Kubernetes (Minikube + Helm)
 
-``` bash
-make start-minikube
-```
-
-### 4.1 render
-Renderiza chart Helm
-
-eval $(minikube docker-env -u)
+Para desplegar usando **la imagen ya publicada en GHCR** y registrada en `values.yaml`:
 
 ```bash
-make render
+make deploy-from-ghcr
 ```
 
+Este comando hace:
 
-### 4.2 aplicar
-Aplica la configuración en Kubernetes
-
-```bash
-make apply
-```
+1. **start-minikube**   
+    - Inicia el cluster Minikube (si no está iniciado).
+2. **render**
+    - Genera `deploy/tt.yaml` a partir del chart Helm.
+    - Usa `values.yaml`, donde ya está configurado:
+        - el `repository` de GHCR
+        - el `tag` de la imagen publicada
+3. **apply**
+    - Crea el namespace `traveltrack` si no existe.
+    - Aplica `deploy/tt.yaml` (deployment, service, configmap, etc.).
+    - Kubernetes descarga automáticamente la imagen desde GHCR.
+4. **smoke**
+    - Ejecuta un test rápido:
+        - `/health`
+        - `/api/version`
+    - Hace port-forward temporal y verifica que la app responde.
 
 ---
 
-### 4.3 port-forward
+## 3. Kyverno — Validación de Políticas
 
-``` bash
-make port-forward
-```
+> No requiere que la app esté corriendo.
 
----
-
-## 5) Test
-
-Verificar que la aplicación responde correctamente:
-
-```bash
-make smoke
-```
-
-
-- `/health`: debe devolver un estado OK.
-    
-- `/api/version`: debe reflejar la versión actual (`APP_VERSION` o `IMAGE_VERSION`).
-
-Si las respuestas son correctas, la aplicación está corriendo dentro del cluster.
-
----
-# Etapa 4
-## 6) Kyverno - Instalación y validación
+### 3.1 Instalar Kyverno en el cluster
 
 ```bash
 make kyverno-install-kubectl
+```
+
+### 3.2 Aplicar políticas
+
+```bash
 make kyverno-apply
+```
 
-(reset)
-make kyverno-reset
+Reporte en:  
+`reports/kyverno.log`
 
-(opcional)
+### 3.3 Validación manual (opcional)
+
+```bash
 make kyverno-test-bad
 make kyverno-test-good
-(clean)
 make kyverno-clean
+```
 
-(uninstall)
+### 3.4 Desinstalar Kyverno
+
+```bash
 make kyverno-uninstall
 ```
 
-El reporte queda en `traveltrack-api/reports/kyverno.log`
-
 ---
 
-# Etapa 5
+## 4. Auditorías de Seguridad
 
-## a) npm audit → Seguridad de dependencias
+### 4.1 npm audit (dependencias Node)
 
-0) confirmar que las dependiencias ya estan instaladas
+> No requiere que la app esté corriendo.
+
+Instalar dependencias:
+
 ```bash
-cd traveltrack-api
 npm install
-
 ```
 
-1) ejecutar análisis
+Generar reporte:
+
 ```bash
 npm audit --json > reports/npm-audit.txt
-
 ```
 
-2) validacion
-```bash
-less reports/npm-audit.txt
-```
-o
+Visualizar:
+
 ```bash
 cat reports/npm-audit.txt | jq '.'
 ```
 
+---
 
-## b) Trivy → Vulnerabilidades en la imagen
+## 4.2 Trivy (vulnerabilidades de la imagen)
 
+> No requiere que la app esté corriendo.
 
-1) correr Trivy desde docker
-```bash
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v $PWD:/work \
-  -w /work \
-  aquasec/trivy:latest \
-  image ghcr.io/cardo88/traveltrack-api:$IMAGE_VERSION \
-  --format json > reports/trivy-report.json
-```
-
-2) validar reporte, filtrado por high o critical, y solo con campos interesantes
-```bash
-jq '.Results[].Vulnerabilities // [] 
-    | .[] 
-    | select(.Severity=="HIGH" or .Severity=="CRITICAL") 
-    | {id: .VulnerabilityID, pkg: .PkgName, severity: .Severity, installed: .InstalledVersion, fixed: .FixedVersion}' \
-    reports/trivy-report.json
-```
-
-
-## c) SlimToolkit/Dive → Composición y optimización de capas
+Ejecutar análisis:
 
 ```bash
-eval $(minikube -p minikube docker-env -u)
+make trivy-scan
 ```
+
+Filtrar HIGH + CRITICAL:
 
 ```bash
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v "$PWD":/work \
-  -w /work \
-  dslim/docker-slim:latest \
-  xray --pull \
-       --target ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
+make trivy-summary
 ```
-
-probando con Dive
-```bash
-docker pull ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
-docker image ls ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
-```
-
-```bash
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  wagoodman/dive:latest \
-  ghcr.io/cardo88/traveltrack-api:2025.11.15.15.58
-```
-
 
 ---
-# Etapa 6
 
-> docker apuntando a docker
+### 4.3 Dive (análisis de capas)
 
-## Ejecutar la validación
+> No requiere que la app esté corriendo.
 
-Una vez agregado el target:
+Ejecutar:
+
+```bash
+make dive-image
 ```
+
+**Tips rápidos para usar Dive:**
+
+1. **Cambiar entre vistas**
+    Usá las teclas **Tab** y **C** para alternar entre:
+    - Árbol de capas (Layer Tree)
+    - Contenido del filesystem
+    - Vista agregada de cambios y archivos duplicados
+        Ideal para encontrar qué layer aporta más peso o qué archivos se repiten.
+2. **Filtrar archivos por cambio o tamaño**
+    Presioná **F** para activar filtros (por tipo de cambio, tamaño, etc.).
+    Muy útil para detectar:
+    - módulos npm innecesarios
+    - archivos que quedaron de más en el build
+    - dependencias duplicadas
+3. **Interpretar el “Image efficiency score”**
+    Dive te da un puntaje (0–100%).
+    Si el score es alto (90%+), tu Dockerfile está bien optimizado:
+    - pocas capas inútiles
+    - poco contenido duplicado
+    - pasos de build razonables.
+
+---
+
+## 5. KubeLinter — Análisis de Manifiestos Kubernetes
+
+> No requiere que la app esté corriendo.
+
+El target genera automáticamente `deploy/tt.yaml` si no existe.
+
+```bash
 make kubelinter-scan
 ```
 
-Esto generará:
+Salida:
 
 `reports/kubelinter.txt`
 
-
 ---
 
-# Etapa 7 - Falco
+## 6. Falco — Detección de Intrusiones (Runtime Security)
 
-> Docker como minikube
-> Debe estar traveltrack corriendo
+> Requiere que la app ya esté corriendo en Minikube.
 
-1. Instalar Falco en Minikube
-	- Crea el namespace falco
-	- Agrega el repo Helm (dentro del contenedor helm)
-	- Instala Falco con los valores por defecto
-	- No instala nada en la compu
-2. Generar un evento sospechoso (por ejemplo, abrir un shell dentro de un pod)
-    - Entrar a un pod en modo shell (sh)
-	- Esto genera la regla “Terminal shell in container” o similar
-3. Extraer los logs a reports/falco-event.log
-    - Se capturan las últimas líneas del daemon de Falco.
-4. Desinstalar Falco para no dejarlo corriendo
+### 6.1 Instalar Falco
 
-Comandos:
-``` bash
+```bash
 make falco-install
-sleep 20
-kubectl get pods -n falco
+```
+
+### 6.2 Generar un evento sospechoso y exportar logs
+
+```bash
 make falco-trigger
-sleep 5
+sleep 60
 make falco-logs
+```
+
+Salida:
+
+`reports/falco-event.log`
+
+### 6.3 Desinstalar Falco (se elimina el namespace)
+
+```bash
 make falco-uninstall
 ```
 
-Genera reporte en `reports/falco-event.log`
+#### Nota sobre limitaciones  
 
-> Para la parte de monitoreo en tiempo de ejecución se instaló Falco mediante Helm en el namespace falco, utilizando helm template y kubectl apply.
-> 
-> Luego se ejecutó un comando controlado (kubectl exec ... sh -c "id") dentro de un pod del namespace traveltrack para simular la apertura de un shell en un contenedor, que es una de las situaciones monitoreadas por las reglas por defecto de Falco.
-> 
-> Los logs del daemon de Falco se recopilaron en reports/falco-event.log. En ellos se observa que Falco inicia correctamente, carga su configuración y reglas (falco_rules.yaml), pero al intentar adjuntar los BPF programs a los tracepoints del kernel se registran errores de libbpf/libpman indicando que no encuentra los eventos de syscall esperados.
-> 
-> Esto se debe a limitaciones del entorno de ejecución (Minikube sobre macOS/Docker), donde el kernel de la VM no expone todos los tracepoints necesarios para el engine BPF de Falco. Como consecuencia, en este entorno no se llegan a registrar alertas de reglas, aunque el flujo de instalación, generación de evento sospechoso y recolección de evidencia está implementado y reproducible.
-
-### Limitaciones del entorno con Falco
-
-Falco se inicializa correctamente, carga su configuración y reglas, y arranca el engine modern-bpf. Sin embargo, en este entorno (Minikube sobre macOS/Docker Desktop) el kernel de la VM no expone todos los tracepoints necesarios para la instrumentación de syscalls. Esto genera mensajes de libbpf/libpman indicando que no se encuentran ciertos eventos (sys_enter_*), lo cual impide que algunas reglas disparen alertas.
-
-Este comportamiento es conocido en setups basados en LinuxKit/Docker Desktop, donde el kernel virtualizado presenta soporte BPF parcial. A pesar de ello:
-- El despliegue de Falco es reproducible
-- El evento sospechoso se genera correctamente
-- Los logs del daemon quedan almacenados como evidencia
-
+En Minikube sobre macOS el kernel virtualizado no expone todos los tracepoints necesarios para BPF, por lo que Falco registra errores `libbpf` y no dispara todas las reglas.  
+Aun así:
+- La instalación funciona
+- La simulación de evento es válida
+- Se generan logs de evidencia
 
 ---
-# Limpieza del entorno
 
-#### 7.1 Borrar el namespace de travletrack
+## 7. Limpieza del entorno
+
+### 7.1 Eliminar namespace
 
 ```bash
 kubectl delete namespace traveltrack
 ```
 
-#### 7.2 Apagar minikube
+### 7.2 Apagar Minikube
 
 ```bash
 make stop-minikube
 ```
 
+---
 
+## 8. Ayuda memoria (Docker Daemon)
 
-# arreglar:
-- [ ] que no se gernere una nueva version cada vez, sino qeu se genere solo cuando se pushea, luego conserve esa version en algun lugar (.log tal vez)
-- [ ] arreglar el tema de cuando usar docker para docker y cuando para minikube
-- [ ] cada vez que hago algo con -rm, no esta matando ese docker.
-- [ ] mejorar el smoke, solo esta probando si esta levantado, hay que probar las demas interfaces solicitadas.
-- [ ] cambiar tt.yaml por traveltrack.yaml
-- [ ] cambiar el make apply por make helm apply, o algo por el estilo.
-- [ ] revision del makefile, si estan bien los .phony
+Cambiar Docker CLI al daemon de Minikube:
 
-
-ayuda memoria
-
+```bash
 eval $(minikube docker-env)
+```
+
+Restaurar Docker CLI del host:
+
+```bash
 eval $(minikube docker-env -u)
+```
+
+---
+
+## 9. Estado de Pendientes
+
+- [ ] Mejorar smoke test (agregar endpoints adicionales)
+- [ ] Renombrar `tt.yaml` → `traveltrack.yaml`
