@@ -16,7 +16,6 @@ Microservicio HTTP (Node.js + TypeScript) para gestionar solicitudes de viajes c
 
 - Los datos se almacenan **en memoria** (no hay persistencia).
 
-
 ## Makefile local
 
 Se incluye un Makefile local que permite automatizar el flujo de empaquetado y despliegue.
@@ -109,7 +108,7 @@ main ← pre-release ← laboratorio3 ← feature/laboratorio3-xx-*
 
 ### Diagrama de flujo de ramas
 
-```
+```text
      ┌────────────┐
      │   main     │
      └─────▲──────┘
@@ -134,14 +133,13 @@ main ← pre-release ← laboratorio3 ← feature/laboratorio3-xx-*
 
 ```
 
-
 ---
 
 ## Estructura y documentación del proyecto
 
 El repositorio está organizado para mantener el código fuente, la infraestructura y la documentación de manera modular y reproducible:
 
-```
+```text
 traveltrack-api/
 ├── src/                        # Código fuente (Node.js + TypeScript)
 │   ├── routes/                 # Rutas y lógica
