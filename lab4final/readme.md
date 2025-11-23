@@ -261,6 +261,46 @@ results:
 ### 4. Falco
 Se instala Falco mediante su chart oficial. Falco registra los eventos sospechosos y se extraen las alerta en `reports/falco-event.log`. El reporte incluye una explicación de los incidentes detectado.
 
+#### Acción ejecutada para disparar una alerta de Falco
+
+Para generar evidencia de funcionamiento de Falco se ejecutó, desde el host, una acción que modifica el contenedor de Jenkins instalando software adicional dentro de él (no solo abriendo un shell):
+
+1. __Obtener un shell en el contenedor de Jenkins:__
+
+`docker exec -it jenkins-lab4 bash`
+
+2. __Dentro del contenedor, instalar herramientas que no formaban parte de la imagen base:__
+
+`pip3 install --break-system-packages semgrep`
+
+`npm install -g snyk`
+
+La acción relevante para el laboratorio es la instalación de paquetes adicionales (`pip3 install …`, `npm install …`) dentro de un contenedor ya en ejecución, no la apertura del shell.
+
+#### Descripción del evento detectado por Falco
+
+Falco está configurado con reglas que marcan como sospechoso cuando, dentro de un contenedor, se ejecutan binarios que no forman parte de la imagen base o se instalan paquetes en tiempo de ejecución.
+
+Al ejecutar los comandos anteriores, Falco generó múltiples alertas de severidad `Critical` del tipo:
+
+- Regla: *“Executing binary not part of base image”*
+
+- Procesos involucrados:
+
+    - `/usr/bin/python3.13` y `pip3` ejecutando instalación de módulos (`pip3 install semgrep`, dependencias de `peewee`, etc.).
+
+    - `/usr/bin/node` ejecutando `npm install snyk`.
+
+    - `x86_64-linux-gnu-gcc` compilando extensiones nativas durante la instalación de paquetes.
+
+En los logs de Falco (`reports/falco-event.log`) se observa que:
+
+- `user=root` y `container_id` corresponde al nodo/entorno donde corren los contenedores.
+
+- `evt_type=execve` indica ejecución de nuevos procesos.
+
+Los comandos (`pip3 install …`, `npm install …`) se marcan como comportamiento no previsto respecto a la imagen original, por lo que Falco los reporta como actividad potencialmente maliciosa (posible escalamiento o modificación no controlada del contenedor).
+
 ## Scripts automáticos
 
 ### Se incluyen scripts para manejar el ciclo completo del laboratorio:
