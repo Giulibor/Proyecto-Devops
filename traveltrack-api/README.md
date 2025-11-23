@@ -16,7 +16,6 @@ Microservicio HTTP (Node.js + TypeScript) para gestionar solicitudes de viajes c
 
 - Los datos se almacenan **en memoria** (no hay persistencia).
 
-
 ## Makefile local
 
 Se incluye un Makefile local que permite automatizar el flujo de empaquetado y despliegue.
@@ -85,8 +84,8 @@ Se incluye un Makefile local que permite automatizar el flujo de empaquetado y d
 
 ### 8. Documentación
 
-- [ ] README actualizado con roadmap y enlaces a `/reports`
-- [ ] Guías en `docs/` alineadas con el alcance del Entregable 3
+- [x] README actualizado con roadmap
+- [x] Guías en `docs/` alineadas con el alcance del Entregable 3
 
 ---
 
@@ -107,36 +106,9 @@ main ← pre-release ← laboratorio3 ← feature/laboratorio3-xx-*
 | **laboratorio3** | Rama base específica del **Laboratorio 3**. Es el entorno de desarrollo principal para esta entrega. | Se crean ramas de trabajo individuales desde aquí. |
 | **laboratorio3-xx-nombre** | Ramas de desarrollo específicas (por ejemplo `laboratorio3-01-fundaciones`, `laboratorio3-02-helm`). Cada una aborda una parte del laboratorio. | Se mergean a `laboratorio3` mediante pull requests con revisión. |
 
-### Flujo recomendado
-
-1. Crear una nueva rama desde `laboratorio3`:
-
-    ```bash
-    git checkout laboratorio3
-    git pull
-    git checkout -b laboratorio3-01-fundaciones
-    ```
-
-2. Desarrollar y testear localmente (o en minikube).
-3. Crear Pull Request hacia `laboratorio3` para revisión.
-4. Cuando el conjunto de features esté maduro, mergear `laboratorio3 → pre-release`.
-5. Finalmente, tras validación general, mergear `pre-release → main`.
-
-### Objetivo
-
-Mantener un flujo ordenado que permita:
-
-- Revisiones intermedias por etapa.
-- Entregas parciales sin afectar la rama estable.
-- Integración progresiva de los laboratorios en el repositorio central.
-
-Perfecto — acá tenés un diagrama ASCII simple y limpio, ideal para el README (sin necesidad de renderizado adicional):
-
----
-
 ### Diagrama de flujo de ramas
 
-```
+```text
      ┌────────────┐
      │   main     │
      └─────▲──────┘
@@ -161,48 +133,58 @@ Perfecto — acá tenés un diagrama ASCII simple y limpio, ideal para el README
 
 ```
 
-
 ---
 
 ## Estructura y documentación del proyecto
 
 El repositorio está organizado para mantener el código fuente, la infraestructura y la documentación de manera modular y reproducible:
 
-```
+```text
 traveltrack-api/
-├── src/                       # Código fuente (Node.js + TypeScript)
-│   ├── routes/                # Rutas y lógica
-│   │   └── travelRequests.ts  # Endpoints para solicitudes de viaje
-│   ├── config.ts              # Configuración y constantes
-│   ├── server.ts              # Inicialización del servidor Express
-│   ├── store.ts               # Almacenamiento en memoria
-│   └── types.ts               # Tipos y definiciones TypeScript
-│
-├── charts/                    # Helm Chart (plantillas para despliegue en K8s)
-├── deploy/                    # Manifiestos YAML generados automáticamente
-├── docs/                      # Documentación técnica y guías operativas
-│   ├── deploy-traveltrack.md  # Guía de despliegue principal (macOS/Linux)
-│   ├── deploy-traveltracker-from-windows-wsl2.md # Guía de despliegue desde Windows / WSL2
-│   ├── publish-to-ghcr.md     # Guía de publicación en GHCR
-│   └── Makefile referencias y notas de uso
-│
-├── Makefile                 # Automatización principal (build, deploy, GHCR)
-├── Makefile.windows         # Adaptación para entornos Windows/WSL2
-├── .env.example             # Variables de entorno de referencia
-├── Dockerfile               # Imagen base (multi-arch, sin root)
-└── README.md                # Este archivo
+├── src/                        # Código fuente (Node.js + TypeScript)
+│   ├── routes/                 # Rutas y lógica
+│   │   └── travelRequests.ts   # Endpoints para solicitudes de viaje
+│   ├── config.ts               # Configuración y constantes
+│   ├── server.ts               # Inicialización del servidor Express
+│   ├── store.ts                # Almacenamiento en memoria
+│   └── types.ts                # Tipos y definiciones TypeScript
+|
+├── charts/                     # Helm Chart (plantillas para despliegue en K8s)
+│   └── traveltrack-api/        # chart (templates, values.yaml, Chart.yaml)
+├── deploy/                     # Manifiestos YAML generados automáticamente
+│   ├── falco.yaml
+│   └── tt.yaml
+├── docs/                       # Documentación técnica y guías operativas
+│   ├── arquitectura-y-decisiones.md
+│   ├── deploy-traveltrack.md
+│   ├── more-infomration.md
+│   ├── publish-to-github-container-registry.md
+│   ├── run-by-command.md
+│   └── run-by-makefile.md
+├── k8s/                        # Manifiestos K8s auxiliares
+├── kyverno-policies/           # Políticas Kyverno utilizadas en el laboratorio
+├── kyverno-tests/              # Manifiestos de prueba para Kyverno
+├── dist/                       # Artefactos de build (output de empaquetado)
+├── reports/                    # Resultados de herramientas (trivy, kubelinter, falco...)
+├── readme-resumen20251112.md   # Notas / resúmenes
+├── readme-resumen20251122.md
+├── Makefile                    # Automatización principal (build, deploy, GHCR)
+├── Dockerfile                  # Imagen base (multi-arch, sin root)
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+├── .env.example
+├── .dockerignore
+├── smoke.sh
+└── README.md                   # Este archivo
 ```
 
-### Guías de despliegue
+---
 
-Para realizar el despliegue completo de la aplicación:
+### Guías de documentación
 
-- En **macOS / Linux**: seguir `docs/deploy-traveltrack.md`  
-- En **Windows / WSL2**: seguir `docs/deploy-traveltracker-from-windows-wsl2.md`
+- **Guía de despliegue**: pasos completos para construir, publicar y desplegar la aplicación en Kubernetes.  
+  [docs/deploy-traveltrack.md](docs/deploy-traveltrack.md)
 
-Cada guía detalla el flujo completo:
-- Preparación del entorno  
-- Construcción y publicación multi-arquitectura  
-- Despliegue desde GHCR  
-- Pruebas (smoke test)  
-- Limpieza del entorno
+- **Arquitectura y decisiones del diseño**: resumen técnico de por qué se eligieron las herramientas y cómo se aplicaron en este proyecto.  
+  [docs/arquitectura-y-decisiones.md](docs/arquitectura-y-decisiones.md)
