@@ -11,6 +11,6 @@ data:
     scrape_configs:
       - job_name: 'snake-app'
         static_configs:
-          - targets: ['snake-app:8083']
+          - targets: ['snake-app:80']
             labels:
               app: snake-app
