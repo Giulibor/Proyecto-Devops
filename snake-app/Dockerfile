@@ -9,22 +9,17 @@ COPY . .
 RUN npm run build
 
 # ---------- Runtime stage ----------
-FROM nginx:1.27.2-alpine
+FROM node:20.19.0-alpine AS runtime
+WORKDIR /app
 
-# Puerto no privilegiado y config para usuario no-root
-# - Cambiamos listen 80 -> 8080
-# - Forzamos pid a /tmp/nginx.pid para evitar permisos
-RUN sed -ri 's/listen\s+80;/listen 8080;/' /etc/nginx/conf.d/default.conf \
- && (grep -qE '^pid\s+' /etc/nginx/nginx.conf \
-      && sed -ri 's#^pid\s+.+;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
-      || echo 'pid /tmp/nginx.pid;' >> /etc/nginx/nginx.conf) \
- && mkdir -p /usr/share/nginx/html /var/cache/nginx /var/run/nginx \
- && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /run /etc/nginx /etc/nginx/conf.d
+# Copy only what we need from build stage
+COPY --from=build /app/dist/snake-app/browser /app/dist/snake-app/browser
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# Static files del build Angular
-COPY --from=build /app/dist/snake-app/browser /usr/share/nginx/html
+# Copy server code (we will add server/index.js in the repo)
+COPY server ./server
 
-# No-root
-USER nginx
+ENV PORT=8080
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "server/index.js"]

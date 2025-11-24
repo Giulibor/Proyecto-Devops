@@ -177,6 +177,19 @@ export class SnakeGameComponent implements AfterViewInit {
       this.highScore.set(this.score());
       localStorage.setItem('snake_high_score', String(this.score()));
     }
+    // Report business metric to backend (non-blocking)
+    try {
+      fetch('/api/game/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score: this.score(), result: 'lose' })
+      }).catch(err => {
+        // no-op: best-effort reporting
+        console.warn('Failed reporting game end to /api/game/end', err);
+      });
+    } catch (e) {
+      // ignore -- fetch may not be available in some test contexts
+    }
   }
 
   /** Genera comida en una celda libre aleatoria */

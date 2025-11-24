@@ -1,0 +1,37 @@
+{
+  "annotations": { "list": [] },
+  "uid": "snake-app-overview",
+  "title": "Snake App - Overview",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requests per second (rate)",
+      "targets": [{ "expr": "sum(rate(http_requests_total[1m])) by (route)", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Latency (p50/p95)",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Usage (per pod)",
+      "targets": [{ "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (pod)", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Usage (per pod)",
+      "targets": [{ "expr": "sum(container_memory_usage_bytes) by (pod)", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Business metric: Games played",
+      "targets": [{ "expr": "sum(increase(snake_games_played_total[5m]))", "refId": "A" }]
+    }
+  ],
+  "schemaVersion": 27,
+  "version": 1
+}
