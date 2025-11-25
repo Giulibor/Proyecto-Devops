@@ -5,6 +5,13 @@
 Contiene un ejemplo práctico de despliegue **Blue/Green** en Kubernetes utilizando **Minikube** y **Docker** como entorno local.
 La aplicación base es una versión simple del juego Snake en Angular.
 
+## Requisitos
+
+- `minikube` (configurado con driver `docker`)
+- `docker` (instalado localmente)
+- `kubectl` (configurado para usar el cluster de minikube)
+- `helm` (opcional pero recomendado: si está disponible, `01_up.sh` instalará Prometheus y Grafana automáticamente)
+
 ## Scripts disponibles
 
 Los scripts fueron diseñados para automatizar el flujo completo (build, despliegue, rollout, limpieza).
@@ -36,6 +43,7 @@ Los scripts se encuentran en el directorio `snake-app/scripts`, su objetivo es l
   - **Propósito:** Prepara el ambiente completo, inicia Minikube, limpia recursos previos, ejecuta el build de imágenes llamando a `01b_build_images.sh`, aplica los manifiestos y abre el Service.  
   - **Uso:** Este script deja abierto el comando `minikube service snake-app`, que muestra la URL del servicio en el navegador. Para finalizar este comando y cerrar el servicio, es necesario presionar `Ctrl+C`.  
   - También existe la versión para Windows (PowerShell): `01_up.ps1`.
+  - **Nota adicional:** `01_up.sh` intentará instalar Prometheus y Grafana vía Helm (namespace `monitoring`) si `helm` está disponible en el sistema. Además delega la construcción de imágenes a `01b_build_images.sh`, que crea las imágenes con tags `snake-app:v1-blue` y `snake-app:v2-green`.
 - `01b_build_images.sh`:
   - **Propósito:** Construye automáticamente las imágenes blue (v1) y green (v2), modificando el H1 del HMTL del archivo `snake-app/src/app/app.component.html`HTML, generando previamente un backup.  
   - También existe la versión para Windows (PowerShell): `01b_build_images.ps1`.
@@ -167,6 +175,26 @@ Abrir el servicio en navegador:
 ```bash
 minikube service snake-app
 ```
+
+### Monitoreo (Prometheus + Grafana)
+
+Si ejecutaste `01_up.sh` y tenés `helm` instalado, el script instala Prometheus y Grafana en el namespace `monitoring`.
+
+- Para abrir Grafana localmente (port-forward):
+
+```bash
+kubectl port-forward -n monitoring svc/grafana 3000:3000
+# luego abrir http://localhost:3000 (usuario/clave por defecto: admin/admin)
+```
+
+- Para abrir Prometheus localmente (port-forward):
+
+```bash
+kubectl port-forward -n monitoring svc/prometheus-server 9090:9090
+# luego abrir http://localhost:9090
+```
+
+El repositorio incluye un dashboard exportado en `grafana/dashboard.json` y manifiestos en `k8s/monitoring/` si preferís aplicar el stack sin Helm.
 
 ---
 
