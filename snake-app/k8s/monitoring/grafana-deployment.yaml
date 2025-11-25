@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource
+  labels:
+    grafana_datasource: "1"
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  labels:
+    grafana_dashboard: "1"
+data:
+  dashboard.json: |
+    {
+      "annotations": { "list": [] },
+      "uid": "snake-app-overview",
+      "title": "Snake App - Overview",
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Requests per second (rate)",
+          "targets": [{ "expr": "sum(rate(http_requests_total[1m])) by (route)", "refId": "A" }]
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP Latency (p50/p95)",
+          "targets": [
+            { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "refId": "A" },
+            { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "refId": "B" }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "CPU Usage (per pod)",
+          "targets": [{ "expr": "sum(rate(container_cpu_usage_seconds_total[5m])) by (pod)", "refId": "A" }]
+        },
+        {
+          "type": "timeseries",
+          "title": "Memory Usage (per pod)",
+          "targets": [{ "expr": "sum(container_memory_usage_bytes) by (pod)", "refId": "A" }]
+        },
+        {
+          "type": "timeseries",
+          "title": "Business metric: Games played",
+          "targets": [{ "expr": "sum(increase(snake_games_played_total[5m]))", "refId": "A" }]
+        }
+      ],
+      "schemaVersion": 27,
+      "version": 1
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-provider
+  labels:
+    grafana_dashboard_provider: "1"
+data:
+  provider.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.0.0
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin"
+            - name: GF_INSTALL_PLUGINS
+              value: ""
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards/provider.yaml
+              subPath: provider.yaml
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasource
+            items:
+              - key: prometheus.yaml
+                path: prometheus.yaml
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
+        - name: dashboards-provider
+          configMap:
+            name: grafana-dashboards-provider
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: grafana

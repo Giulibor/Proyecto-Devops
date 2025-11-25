@@ -1,0 +1,51 @@
+image:
+  repository: snake-app
+  tag: v1-blue
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080
+
+podLabels:
+  app: snake-app
+  color: blue
+
+replicaCount: 1
+
+livenessProbe:
+  path: /
+  port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  path: /
+  port: 8080
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+config:
+  enabled: true
+  data:
+    APP_TITLE: "Snake App"
+    APP_MESSAGE: "Welcome to the Snake frontend deployed with Helm"
+
+ingress:
+  enabled: false
+  className: ""
+  hosts:
+    - host: snake.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

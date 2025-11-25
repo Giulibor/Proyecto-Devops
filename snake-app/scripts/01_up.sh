@@ -15,6 +15,30 @@ minikube start --driver=docker
 echo "==> 2) Apuntando Docker local al daemon de minikube"
 eval "$(minikube docker-env)"
 
+echo "==> 2.b) Instalando Prometheus y Grafana vía Helm en namespace 'monitoring'"
+if ! command -v helm >/dev/null 2>&1; then
+	echo "helm no encontrado en PATH. Instala Helm y vuelve a ejecutar este script." >&2
+else
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
+	helm repo add grafana https://grafana.github.io/helm-charts || true
+	helm repo update
+
+	echo "==> Instalando/actualizando Prometheus (prometheus-community/prometheus)"
+	helm upgrade --install prometheus prometheus-community/prometheus \
+		-n monitoring --create-namespace \
+		--set server.persistentVolume.enabled=false || true
+
+	echo "==> Instalando/actualizando Grafana (grafana/grafana)"
+	helm upgrade --install grafana grafana/grafana \
+		-n monitoring --create-namespace \
+		--set adminUser=admin --set adminPassword=admin \
+		--set persistence.enabled=false || true
+
+	echo "==> Esperando a que Prometheus y Grafana estén listos (esto puede tardar varios segundos)"
+	kubectl rollout status deployment/grafana -n monitoring --timeout=300s || true
+	kubectl rollout status deployment/prometheus-server -n monitoring --timeout=300s || true
+fi
+
 echo "==> 3) Limpiando recursos previos SOLO de snake-app (no borro todo el cluster)"
 kubectl delete deploy -l app=snake-app --ignore-not-found
 kubectl delete svc    -l app=snake-app --ignore-not-found

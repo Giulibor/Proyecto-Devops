@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "snake-app.fullname" . }}
+  labels:
+    {{- include "snake-app.labels" . | nindent 4 }}
+spec:
+  {{- /* Creamos una variable $svc que nunca es nil */}}
+  {{- $svc := .Values.service | default (dict) }}
+  type: {{ default "LoadBalancer" $svc.type }}
+  selector:
+    app: {{ .Values.podLabels.app | default "snake-app" }}
+  ports:
+    - name: http
+      port: {{ default 80 $svc.port }}
+      targetPort: {{ default 8080 $svc.targetPort }}
